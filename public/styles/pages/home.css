@@ -1,0 +1,170 @@
+.hero {
+  padding-block: 6rem 4rem;
+}
+
+.hero .container {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 44rem;
+  margin-inline: auto;
+  text-align: center;
+  justify-items: center;
+}
+
+.hero .lead {
+  margin-inline: auto;
+}
+
+.hero-rules {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.5rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.hero-rules span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.toy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+  gap: 1.25rem;
+}
+
+.toy-card {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--page-raised);
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  transition: border-color 160ms var(--ease), transform 220ms var(--ease);
+}
+
+.toy-card:hover {
+  border-color: var(--ink);
+  transform: translateY(-2px);
+  color: inherit;
+}
+
+.toy-art {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  padding: 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.toy-art svg {
+  width: 100%;
+  max-width: 20rem;
+  height: auto;
+  overflow: visible;
+}
+
+.toy-body {
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+  gap: 0.6rem;
+  padding: 1.25rem 1.5rem 1.4rem;
+}
+
+.toy-body p {
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+}
+
+.toy-card .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.toy-foot {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.4rem;
+  font-size: 0.875rem;
+}
+
+.toy-card .go {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.toy-card .go i {
+  transition: transform 220ms var(--ease);
+}
+
+.toy-card:hover .go i {
+  transform: translateX(3px);
+}
+
+.toy-card.soon {
+  border-style: dashed;
+  background: transparent;
+  pointer-events: none;
+}
+
+.toy-card.soon .toy-art {
+  background: transparent;
+  border-bottom-style: dashed;
+}
+
+.how {
+  background: var(--surface);
+  border-block: 1px solid var(--line);
+}
+
+.how-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  counter-reset: step;
+}
+
+.how-steps div {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.how-steps div::before {
+  counter-increment: step;
+  content: counter(step, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.how-steps p {
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 720px) {
+  .hero {
+    padding-block: 4rem 2.5rem;
+  }
+
+  .toy-card {
+    grid-template-columns: 1fr;
+    padding: 1.5rem;
+  }
+
+  .how-steps {
+    grid-template-columns: 1fr;
+  }
+}

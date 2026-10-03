@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PDF to Markdown, ready for RAG — AIVAX Toys</title>
+  <meta name="description" content="Turn any PDF into clean Markdown, including scanned pages, then split it into chunks ready for a knowledge base. Free, powered by AIVAX.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23171713'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%238cc7f5'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://api.fontshare.com">
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&f[]=sentient@400&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.min.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/components/controls.css">
+  <link rel="stylesheet" href="/styles/components/toy-art.css">
+  <link rel="stylesheet" href="/styles/pages/pdf-to-markdown.css">
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="/">AIVAX <span>Toys</span></a>
+      <nav class="site-nav">
+        <a href="https://docs.aivax.net/docs/getting-started"><i class="ri-book-open-line"></i><span class="nav-label">Docs</span></a>
+        <a href="https://github.com/aivaxlabs/toys"><i class="ri-github-line"></i><span class="nav-label">Source</span></a>
+        <a href="https://aivax.net"><i class="ri-external-link-line"></i><span class="nav-label">aivax.net</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="toy-hero">
+      <div class="container">
+        <a class="back" href="/"><i class="ri-arrow-left-line"></i> All toys</a>
+        <h1>Make any PDF readable for AI</h1>
+        <p class="lead">
+          Drop a PDF and get clean, structured text back — even from scanned pages.
+          Then split it into bite-sized pieces, ready for a knowledge base.
+        </p>
+      </div>
+    </section>
+
+    <section class="tool">
+      <div class="container">
+        <ol class="steps" aria-label="Progress">
+          <li class="is-active" data-step="upload"><span>1</span> Upload</li>
+          <li data-step="read"><span>2</span> Read</li>
+          <li data-step="split"><span>3</span> Split</li>
+        </ol>
+
+        <div class="tool-card">
+          <label class="dropzone" id="dropzone">
+            <svg class="art-pdf" viewBox="0 0 240 140" aria-hidden="true">
+              <defs>
+                <linearGradient id="scan-glow" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#2079c2" stop-opacity="0" />
+                  <stop offset="1" stop-color="#2079c2" stop-opacity="0.28" />
+                </linearGradient>
+                <clipPath id="page-clip">
+                  <path d="M36 21 h45 l19 19 v77 q0 4 -4 4 h-60 q-4 0 -4 -4 v-92 q0 -4 4 -4z" />
+                </clipPath>
+              </defs>
+              <path class="page" d="M36 21 h45 l19 19 v77 q0 4 -4 4 h-60 q-4 0 -4 -4 v-92 q0 -4 4 -4z" />
+              <path class="fold" d="M81 21.5 v13 q0 5 5 5 h13.5" />
+              <g class="text">
+                <path d="M42 50 h24" class="heading" />
+                <path d="M42 60 q12 -1 24 0 t22 0" />
+                <path d="M42 68 q10 1 20 0 t20 0" />
+                <path d="M42 76 q8 -1 16 0 t14 0" />
+                <path d="M42 88 h18" class="heading" />
+                <path d="M42 98 q12 1 24 0 t22 0" />
+                <path d="M42 106 q9 -1 18 0 t12 0" />
+              </g>
+              <g clip-path="url(#page-clip)">
+                <g class="scan">
+                  <rect x="30" y="8" width="74" height="14" fill="url(#scan-glow)" />
+                  <path d="M30 22 h74" class="beam" />
+                </g>
+              </g>
+              <rect class="badge-pdf" x="26" y="98" width="26" height="13" rx="3" />
+              <text class="badge-pdf-label" x="39" y="107.6">PDF</text>
+              <path class="flow" d="M106 70 C124 70 122 38 140 38 M106 70 H140 M106 70 C124 70 122 102 140 102" />
+              <circle class="flow-dot" cx="106" cy="70" r="2.6" />
+              <g class="seg seg-1">
+                <rect x="146" y="26" width="70" height="24" rx="5" />
+                <text x="153" y="42">#</text>
+                <path d="M166 34 h38 M166 42 q10 -1 20 0 t8 0" />
+              </g>
+              <g class="seg seg-2">
+                <rect x="146" y="58" width="70" height="24" rx="5" />
+                <text x="153" y="74">#</text>
+                <path d="M166 66 h30 M166 74 q12 1 24 0 t10 0" />
+              </g>
+              <g class="seg seg-3">
+                <rect x="146" y="90" width="70" height="24" rx="5" />
+                <text x="153" y="106">#</text>
+                <path d="M166 98 h34 M166 106 q8 -1 16 0 t6 0" />
+              </g>
+            </svg>
+            <strong>Drop a PDF here, or <u>browse</u></strong>
+            <small id="dropzone-hint">Up to 10 MB · text or scanned · never stored</small>
+            <input type="file" id="file-input" accept="application/pdf,.pdf">
+          </label>
+
+          <div class="file-row" id="file-chip" hidden>
+            <i class="ri-file-pdf-2-fill"></i>
+            <div class="file-meta">
+              <span class="name" id="file-name"></span>
+              <span class="muted" id="file-size"></span>
+            </div>
+            <button type="button" class="link-button" id="file-clear">Change</button>
+            <button class="button" id="convert">Read PDF <i class="ri-arrow-right-line"></i></button>
+          </div>
+
+          <p class="working" id="convert-status" hidden></p>
+
+          <div class="notice error" id="error" hidden><i class="ri-error-warning-line"></i><span></span></div>
+        </div>
+
+        <div id="turnstile" aria-hidden="true"></div>
+
+        <div class="result" id="markdown-result" hidden>
+          <div class="result-head">
+            <div>
+              <h2>Your document, as text</h2>
+              <p class="muted" id="markdown-stats"></p>
+            </div>
+            <div class="actions">
+              <div class="tabs" role="tablist">
+                <button role="tab" aria-selected="true" data-view="preview">Formatted</button>
+                <button role="tab" aria-selected="false" data-view="raw">Markdown</button>
+              </div>
+              <button class="icon-button" id="markdown-copy" title="Copy Markdown" aria-label="Copy Markdown"><i class="ri-file-copy-line"></i></button>
+              <button class="icon-button" id="markdown-download" title="Download .md" aria-label="Download .md"><i class="ri-download-2-line"></i></button>
+            </div>
+          </div>
+          <div class="result-body markdown-preview" id="markdown-preview"></div>
+          <div class="result-body" id="markdown-raw" hidden><pre class="raw"></pre></div>
+        </div>
+
+        <div class="next-step" id="segment-actions" hidden>
+          <div>
+            <h3>Split it for a knowledge base</h3>
+            <p class="muted">
+              AI search works best with short, self-contained pieces. We'll find the natural breaks —
+              sections, topics, paragraphs — instead of cutting every N characters.
+            </p>
+            <label class="toggle"><input type="checkbox" id="sanitize" checked> Skip clutter like page headers and link lists</label>
+          </div>
+          <button class="button" id="segment"><i class="ri-scissors-cut-line"></i> Split into chunks</button>
+          <p class="working" id="segment-status" hidden></p>
+        </div>
+
+        <div class="result" id="segments-result" hidden>
+          <div class="result-head">
+            <div>
+              <h2>Ready-to-index chunks</h2>
+              <p class="muted" id="segments-stats"></p>
+            </div>
+            <div class="actions">
+              <button class="button secondary small" id="segments-copy"><i class="ri-file-copy-line"></i> Copy</button>
+              <button class="button small" id="segments-download"><i class="ri-download-2-line"></i> Download .jsonl</button>
+            </div>
+          </div>
+          <div class="result-body"><div class="segments" id="segments"></div></div>
+          <p class="result-foot muted">
+            The file imports directly into an <a href="https://docs.aivax.net/docs/rag/collections">AIVAX collection</a>.
+          </p>
+        </div>
+
+        <div class="meter" id="meter">
+          <span><i class="ri-timer-line"></i> <b id="m-time">0 s</b> processing</span>
+          <span><i class="ri-coin-line"></i> <b id="m-cost">$0.0000</b> would be your cost <a href="https://docs.aivax.net/docs/pricing" class="hint" title="Estimated at Free-plan list prices before the daily allowance">?</a></span>
+          <span><i class="ri-gift-line"></i> free here · <b id="q-hour">–</b> documents left this hour</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="how-it-works">
+      <div class="container">
+        <h2>How it works</h2>
+        <div class="how-grid">
+          <div>
+            <i class="ri-scan-2-line"></i>
+            <h3>Read</h3>
+            <p>
+              AIVAX pulls the text out of your PDF and keeps its structure — headings, lists, tables.
+              Pages that are just images get read with OCR. <a href="https://docs.aivax.net/docs/web-foundation/fetch-and-ocr">Fetch &amp; OCR</a>
+            </p>
+          </div>
+          <div>
+            <i class="ri-scissors-cut-line"></i>
+            <h3>Split</h3>
+            <p>
+              A model finds where one idea ends and the next begins, so each chunk can answer a question on its own.
+              Your text is never rewritten. <a href="https://docs.aivax.net/docs/rag/text-segmentation">Text segmentation</a>
+            </p>
+          </div>
+          <div>
+            <i class="ri-database-2-line"></i>
+            <h3>Search</h3>
+            <p>
+              Load the chunks into a collection and your assistant can find and quote the right passage of your document.
+              <a href="https://docs.aivax.net/docs/rag/collections">Collections</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="dev">
+      <div class="container">
+        <details class="drawer" id="code">
+          <summary>
+            <span>
+              <i class="ri-code-s-slash-line"></i>
+              <strong>For developers</strong>
+              <span class="muted">API calls from this session, and the code to build it yourself</span>
+            </span>
+            <i class="ri-arrow-down-s-line chevron"></i>
+          </summary>
+
+          <div class="drawer-body">
+            <div class="dev-grid">
+              <div>
+                <h3>Calls made by this page</h3>
+                <div class="calls" id="calls"><span class="empty">Nothing yet. Read a PDF to see the requests.</span></div>
+                <dl class="dev-stats">
+                  <div><dt>API calls</dt><dd id="m-calls">0</dd></div>
+                  <div><dt>Processing units</dt><dd id="m-pus">0</dd></div>
+                  <div><dt>Left this minute</dt><dd id="q-minute">–</dd></div>
+                  <div>
+                    <dt><label for="plan">Price OCR as</label></dt>
+                    <dd>
+                      <select id="plan">
+                        <option value="free">Free · $0.15/1k PU</option>
+                        <option value="pro">Pro · $0.05/1k PU</option>
+                        <option value="max">Max · $0.02/1k PU</option>
+                      </select>
+                    </dd>
+                  </div>
+                </dl>
+                <p class="muted small">
+                  Estimates use public list prices before daily allowances. Limits on this toy: 5 documents per minute, 20 per hour.
+                  A Turnstile check runs before every call.
+                </p>
+              </div>
+
+              <div class="code-section">
+                <h3>Build it yourself</h3>
+                <p class="muted small">
+                  Two API calls: <code>POST /api/v1/web/fetch</code> and <code>POST /api/v1/generations/segment</code>.
+                  See the <a href="https://inference.aivax.net/apidocs">API reference</a> or the
+                  <a href="https://github.com/aivaxlabs/toys/blob/main/src/worker.js">Worker behind this page</a>.
+                </p>
+                <div class="tabs" role="tablist" id="code-tabs">
+                  <button role="tab" aria-selected="true" data-panel="curl">cURL</button>
+                  <button role="tab" aria-selected="false" data-panel="js">JavaScript</button>
+                  <button role="tab" aria-selected="false" data-panel="worker">Worker</button>
+                </div>
+        <div class="code-panel code-block" data-panel="curl">
+          <button class="copy" type="button">Copy</button>
+<pre class="code"><span class="c"># 1. PDF → Markdown. Inline the file as a base64 data URI (10 MB max per item).</span>
+curl https://inference.aivax.net/api/v1/web/fetch \
+  -H <span class="s">"Authorization: Bearer $AIVAX_API_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">"{
+    \"contents\": [\"data:application/pdf;base64,$(base64 -w0 manual.pdf)\"],
+    \"returnErrors\": true
+  }"</span>
+
+<span class="c"># → { "data": { "results": [ {
+#       "index": 0,
+#       "extractedText": "# Title\n\nParagraph...",   ← Markdown
+#       "processingUnits": 7,                      ← what you pay for
+#       "jsonProcessingUnits": 0,
+#       "error": null } ] } }</span>
+
+<span class="c"># 2. Markdown → segments. `sanitize` skips fragments that are useless for retrieval.</span>
+curl https://inference.aivax.net/api/v1/generations/segment \
+  -H <span class="s">"Authorization: Bearer $AIVAX_API_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{ "documents": ["# Title\n\nParagraph..."], "sanitize": true }'</span>
+
+<span class="c"># → { "data": {
+#       "result": [ { "index": 0, "count": 8, "segments": ["...", "..."] } ],
+#       "usage":  { "processing_units": 2516, "cost": 0 } } }</span></pre>
+        </div>
+
+        <div class="code-panel code-block" data-panel="js" hidden>
+          <button class="copy" type="button">Copy</button>
+<pre class="code"><span class="c">// Works in Node 18+, Bun, Deno and browsers. Keep the API key server-side.</span>
+<span class="k">const</span> AIVAX = <span class="s">"https://inference.aivax.net/api/v1"</span>;
+<span class="k">const</span> headers = {
+  authorization: <span class="s">`Bearer ${process.env.AIVAX_API_KEY}`</span>,
+  <span class="s">"content-type"</span>: <span class="s">"application/json"</span>,
+};
+
+<span class="c">// 1. PDF → Markdown</span>
+<span class="k">async function</span> pdfToMarkdown(bytes) {
+  <span class="k">const</span> base64 = Buffer.from(bytes).toString(<span class="s">"base64"</span>);
+
+  <span class="k">const</span> response = <span class="k">await</span> fetch(<span class="s">`${AIVAX}/web/fetch`</span>, {
+    method: <span class="s">"POST"</span>,
+    headers,
+    body: JSON.stringify({
+      contents: [<span class="s">`data:application/pdf;base64,${base64}`</span>],
+      returnErrors: <span class="k">true</span>,
+    }),
+  });
+
+  <span class="k">const</span> { data } = <span class="k">await</span> response.json();
+  <span class="k">const</span> [item] = data.results;          <span class="c">// one result per `contents` entry, matched by index</span>
+
+  <span class="k">if</span> (item.error) <span class="k">throw new</span> Error(item.error);
+
+  <span class="k">return</span> { markdown: item.extractedText, processingUnits: item.processingUnits };
+}
+
+<span class="c">// 2. Markdown → RAG segments</span>
+<span class="k">async function</span> segmentForRag(markdown, { sanitize = <span class="k">true</span> } = {}) {
+  <span class="k">const</span> response = <span class="k">await</span> fetch(<span class="s">`${AIVAX}/generations/segment`</span>, {
+    method: <span class="s">"POST"</span>,
+    headers,
+    body: JSON.stringify({ documents: [markdown], sanitize }),
+  });
+
+  <span class="k">const</span> { data } = <span class="k">await</span> response.json();
+
+  <span class="k">return</span> { segments: data.result[0].segments, processingUnits: data.usage.processing_units };
+}
+
+<span class="c">// 3. Shape the segments as JSONL for POST /api/v1/collections/{id}/documents</span>
+<span class="k">function</span> toJsonl(segments, source) {
+  <span class="k">return</span> segments
+    .map((text, index) =&gt; JSON.stringify({
+      docid: <span class="s">`${source}#${index + 1}`</span>,       <span class="c">// stable name: re-importing updates instead of duplicating</span>
+      text,
+      __ref: source.slice(0, 64),           <span class="c">// groups the chunks of one file</span>
+      __tags: [<span class="s">"pdf"</span>],
+      __meta: { source, index },
+    }))
+    .join(<span class="s">"\n"</span>);
+}
+
+<span class="k">const</span> bytes = <span class="k">await</span> Bun.file(<span class="s">"manual.pdf"</span>).arrayBuffer();
+<span class="k">const</span> { markdown } = <span class="k">await</span> pdfToMarkdown(bytes);
+<span class="k">const</span> { segments } = <span class="k">await</span> segmentForRag(markdown);
+
+<span class="k">await</span> Bun.write(<span class="s">"manual.jsonl"</span>, toJsonl(segments, <span class="s">"manual.pdf"</span>));</pre>
+        </div>
+
+        <div class="code-panel code-block" data-panel="worker" hidden>
+          <button class="copy" type="button">Copy</button>
+<pre class="code"><span class="c">// Trimmed from src/worker.js in the repository. The real file adds Turnstile
+// verification and a Durable Object sliding-window rate limiter.</span>
+<span class="k">const</span> AIVAX_API = <span class="s">"https://inference.aivax.net/api/v1"</span>;
+
+<span class="k">export default</span> {
+  <span class="k">async</span> fetch(request, env) {
+    <span class="k">const</span> url = <span class="k">new</span> URL(request.url);
+
+    <span class="k">if</span> (url.pathname === <span class="s">"/api/convert"</span> &amp;&amp; request.method === <span class="s">"POST"</span>) {
+      <span class="k">const</span> form = <span class="k">await</span> request.formData();
+      <span class="k">const</span> file = form.get(<span class="s">"file"</span>);
+
+      <span class="k">const</span> gate = <span class="k">await</span> verifyTurnstileAndQuota(request, env, form.get(<span class="s">"turnstile"</span>));
+      <span class="k">if</span> (gate <span class="k">instanceof</span> Response) <span class="k">return</span> gate;      <span class="c">// 403 or 429</span>
+
+      <span class="k">const</span> base64 = bytesToBase64(<span class="k">new</span> Uint8Array(<span class="k">await</span> file.arrayBuffer()));
+      <span class="k">const</span> call = <span class="k">await</span> callAivax(env, <span class="s">"/web/fetch"</span>, {
+        contents: [<span class="s">`data:application/pdf;base64,${base64}`</span>],
+        returnErrors: <span class="k">true</span>,
+      });
+
+      <span class="k">const</span> item = call.data.results[0];
+      <span class="k">return</span> Response.json({
+        markdown: item.extractedText,
+        processingUnits: item.processingUnits,
+        elapsedMs: call.elapsedMs,
+        requestId: call.requestId,
+      });
+    }
+
+    <span class="k">return</span> env.ASSETS.fetch(request);                 <span class="c">// static site from ./public</span>
+  },
+};
+
+<span class="k">async function</span> callAivax(env, path, body) {
+  <span class="k">const</span> startedAt = Date.now();
+  <span class="k">const</span> response = <span class="k">await</span> fetch(AIVAX_API + path, {
+    method: <span class="s">"POST"</span>,
+    headers: {
+      authorization: <span class="s">`Bearer ${env.AIVAX_API_KEY}`</span>,       <span class="c">// `wrangler secret put AIVAX_API_KEY`</span>
+      <span class="s">"content-type"</span>: <span class="s">"application/json"</span>,
+    },
+    body: JSON.stringify(body),
+  });
+
+  <span class="k">const</span> payload = <span class="k">await</span> response.json();
+
+  <span class="k">return</span> {
+    data: payload.data,
+    elapsedMs: Date.now() - startedAt,
+    requestId: response.headers.get(<span class="s">"x-request-id"</span>),
+  };
+}</pre>
+        </div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>AIVAX Toys is maintained by <a href="https://aivax.net">AIVAX</a>. Nothing here is billed to you.</span>
+      <span><a href="https://github.com/aivaxlabs/toys">github.com/aivaxlabs/toys</a> · <a href="https://docs.aivax.net/docs/pricing">Pricing</a> · <a href="https://docs.aivax.net/docs/limits">Limits</a></span>
+    </div>
+  </footer>
+
+  <script type="module" src="/scripts/site.js"></script>
+  <script type="module" src="/scripts/pdf-to-markdown.js"></script>
+</body>
+</html>

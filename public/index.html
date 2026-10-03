@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AIVAX Toys — small, free demos of AIVAX features</title>
+  <meta name="description" content="Try AIVAX features for free, watch the API calls and cost in real time, and copy the code that makes each toy work.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23171713'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%238cc7f5'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://api.fontshare.com">
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&f[]=sentient@400&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.min.css">
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/components/controls.css">
+  <link rel="stylesheet" href="/styles/components/toy-art.css">
+  <link rel="stylesheet" href="/styles/pages/home.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="/">AIVAX <span>Toys</span></a>
+      <nav class="site-nav">
+        <a href="https://docs.aivax.net/docs/getting-started"><i class="ri-book-open-line"></i><span class="nav-label">Docs</span></a>
+        <a href="https://github.com/aivaxlabs/toys"><i class="ri-github-line"></i><span class="nav-label">Source</span></a>
+        <a href="https://aivax.net"><i class="ri-external-link-line"></i><span class="nav-label">aivax.net</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>Small toys that show what AIVAX does</h1>
+        <p class="lead">
+          Each toy wraps one or two AIVAX features in a page you can use right now. It runs on our account,
+          shows every API call and its cost as it happens, and ships with the code so you can rebuild it in an afternoon.
+        </p>
+        <div class="hero-rules">
+          <span><i class="ri-gift-line"></i> Free to use, no sign-up</span>
+          <span><i class="ri-shield-check-line"></i> Protected by Turnstile and per-visitor limits</span>
+          <span><i class="ri-git-repository-line"></i> Open source, Apache-2.0</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <h2>Toys</h2>
+          <p class="muted">One toy today, more as new features land.</p>
+        </div>
+        <div class="toy-grid">
+          <a class="toy-card" href="/pdf-to-markdown/">
+            <div class="toy-art">
+              <svg class="art-pdf" viewBox="0 0 240 140" role="img" aria-label="A PDF page being scanned and split into three segments">
+                <defs>
+                  <linearGradient id="scan-glow" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#2079c2" stop-opacity="0" />
+                    <stop offset="1" stop-color="#2079c2" stop-opacity="0.28" />
+                  </linearGradient>
+                  <clipPath id="page-clip">
+                    <path d="M36 21 h45 l19 19 v77 q0 4 -4 4 h-60 q-4 0 -4 -4 v-92 q0 -4 4 -4z" />
+                  </clipPath>
+                </defs>
+
+                <path class="page" d="M36 21 h45 l19 19 v77 q0 4 -4 4 h-60 q-4 0 -4 -4 v-92 q0 -4 4 -4z" />
+                <path class="fold" d="M81 21.5 v13 q0 5 5 5 h13.5" />
+
+                <g class="text">
+                  <path d="M42 50 h24" class="heading" />
+                  <path d="M42 60 q12 -1 24 0 t22 0" />
+                  <path d="M42 68 q10 1 20 0 t20 0" />
+                  <path d="M42 76 q8 -1 16 0 t14 0" />
+                  <path d="M42 88 h18" class="heading" />
+                  <path d="M42 98 q12 1 24 0 t22 0" />
+                  <path d="M42 106 q9 -1 18 0 t12 0" />
+                </g>
+
+                <g clip-path="url(#page-clip)">
+                  <g class="scan">
+                    <rect x="30" y="8" width="74" height="14" fill="url(#scan-glow)" />
+                    <path d="M30 22 h74" class="beam" />
+                  </g>
+                </g>
+
+                <rect class="badge-pdf" x="26" y="98" width="26" height="13" rx="3" />
+                <text class="badge-pdf-label" x="39" y="107.6">PDF</text>
+
+                <path class="flow" d="M106 70 C124 70 122 38 140 38 M106 70 H140 M106 70 C124 70 122 102 140 102" />
+                <circle class="flow-dot" cx="106" cy="70" r="2.6" />
+
+                <g class="seg seg-1">
+                  <rect x="146" y="26" width="70" height="24" rx="5" />
+                  <text x="153" y="42">#</text>
+                  <path d="M166 34 h38 M166 42 q10 -1 20 0 t8 0" />
+                </g>
+                <g class="seg seg-2">
+                  <rect x="146" y="58" width="70" height="24" rx="5" />
+                  <text x="153" y="74">#</text>
+                  <path d="M166 66 h30 M166 74 q12 1 24 0 t10 0" />
+                </g>
+                <g class="seg seg-3">
+                  <rect x="146" y="90" width="70" height="24" rx="5" />
+                  <text x="153" y="106">#</text>
+                  <path d="M166 98 h34 M166 106 q8 -1 16 0 t6 0" />
+                </g>
+              </svg>
+            </div>
+            <div class="toy-body">
+              <h3>PDF → Markdown → RAG segments</h3>
+              <p>
+                Drop a PDF of up to 10 MB and get clean Markdown back, with OCR on scanned pages.
+                Then split it into retrieval-ready segments and download them as JSONL.
+              </p>
+              <div class="tags">
+                <span class="badge blue">Fetch &amp; OCR</span>
+                <span class="badge blue">Text segmentation</span>
+              </div>
+              <div class="toy-foot">
+                <span class="muted">5 docs / min · 20 / hour</span>
+                <span class="go">Open toy <i class="ri-arrow-right-line"></i></span>
+              </div>
+            </div>
+          </a>
+
+          <div class="toy-card soon" aria-label="More toys coming soon">
+            <div class="toy-art">
+              <svg class="art-soon" viewBox="0 0 240 140" aria-hidden="true">
+                <path d="M90 76 l2 36 q0 4 4 4 h48 q4 0 4 -4 l2 -36" />
+                <path d="M120 77 v38" class="ribbon" />
+                <g class="lid">
+                  <path d="M84 66 q0 -3 3 -3 h66 q3 0 3 3 v8 q0 3 -3 3 h-66 q-3 0 -3 -3z" />
+                  <path d="M120 63 v14" class="ribbon" />
+                  <path d="M120 63 q-14 -14 -18 -4 q-2 6 18 4 q14 -14 18 -4 q2 6 -18 4" class="ribbon" />
+                </g>
+                <path class="spark" d="M120 18 v12 M114 24 h12" />
+                <path class="spark" d="M170 40 v10 M165 45 h10" />
+                <path class="spark" d="M70 44 v10 M65 49 h10" />
+              </svg>
+            </div>
+            <div class="toy-body">
+              <h3>More toys on the way</h3>
+              <p>Next up: features like Reflex reranking, speech and media descriptions, each with the same live calls and copyable code.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="how">
+      <div class="container">
+        <div class="section-head">
+          <h2>How a toy works</h2>
+        </div>
+        <div class="how-steps">
+          <div>
+            <h3>Your browser talks to a tiny Worker</h3>
+            <p>The page never sees an API key. A Cloudflare Worker holds it as a secret, checks the Turnstile token, and counts your usage.</p>
+          </div>
+          <div>
+            <h3>The Worker calls AIVAX</h3>
+            <p>Each call is a plain HTTPS request to the public AIVAX API. The Worker forwards the result, plus timing, request ID and usage.</p>
+          </div>
+          <div>
+            <h3>You see the real numbers</h3>
+            <p>The session panel lists every call, its latency and processing units, and keeps a running cost estimate so you know what the same work would cost you.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>AIVAX Toys is maintained by <a href="https://aivax.net">AIVAX</a>. Nothing here is billed to you.</span>
+      <span><a href="https://github.com/aivaxlabs/toys">github.com/aivaxlabs/toys</a> · <a href="https://docs.aivax.net/docs/pricing">Pricing</a> · <a href="https://docs.aivax.net/docs/limits">Limits</a></span>
+    </div>
+  </footer>
+</body>
+</html>

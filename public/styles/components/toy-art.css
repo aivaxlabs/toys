@@ -1,0 +1,190 @@
+/* PDF → Markdown art: the page is scanned, its lines are written, then three segments drop out. */
+
+.art-pdf {
+  --cycle: 5.6s;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.art-pdf .page {
+  fill: var(--page-raised);
+  stroke: var(--ink);
+  stroke-width: 1.6;
+}
+
+.art-pdf .fold {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+}
+
+.art-pdf .text path {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2.2;
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: pdf-write var(--cycle) var(--ease) infinite;
+}
+
+.art-pdf .text .heading {
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+
+.art-pdf .text path:nth-child(2) { animation-delay: 0.08s; }
+.art-pdf .text path:nth-child(3) { animation-delay: 0.16s; }
+.art-pdf .text path:nth-child(4) { animation-delay: 0.24s; }
+.art-pdf .text path:nth-child(5) { animation-delay: 0.42s; }
+.art-pdf .text path:nth-child(6) { animation-delay: 0.5s; }
+.art-pdf .text path:nth-child(7) { animation-delay: 0.58s; }
+
+.art-pdf .scan {
+  animation: pdf-scan var(--cycle) cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.art-pdf .beam {
+  stroke: var(--blue);
+  stroke-width: 1.6;
+}
+
+.art-pdf .badge-pdf {
+  fill: var(--red);
+  transform: rotate(-6deg);
+  transform-origin: 39px 104px;
+}
+
+.art-pdf .badge-pdf-label {
+  fill: var(--white);
+  font: 600 7.5px var(--font-sans);
+  text-anchor: middle;
+  letter-spacing: 0.04em;
+  transform: rotate(-6deg);
+  transform-origin: 39px 104px;
+}
+
+.art-pdf .flow {
+  fill: none;
+  stroke: var(--blue-strong);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 4;
+  animation: pdf-flow 1.2s linear infinite;
+}
+
+.art-pdf .flow-dot {
+  fill: var(--blue-strong);
+}
+
+.art-pdf .seg rect {
+  fill: var(--page-raised);
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+
+.art-pdf .seg path {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+
+.art-pdf .seg text {
+  fill: var(--blue-strong);
+  font: 600 11px var(--font-mono);
+}
+
+.art-pdf .seg {
+  opacity: 0;
+  animation: pdf-segment var(--cycle) var(--ease) infinite;
+}
+
+.art-pdf .seg-1 { animation-delay: 1.9s; }
+.art-pdf .seg-2 { animation-delay: 2.15s; }
+.art-pdf .seg-3 { animation-delay: 2.4s; }
+
+.toy-card:hover .art-pdf .flow,
+.dropzone:hover .art-pdf .flow {
+  animation-duration: 0.5s;
+}
+
+@keyframes pdf-scan {
+  0% { transform: translateY(0); opacity: 0; }
+  6% { opacity: 1; }
+  34% { transform: translateY(100px); opacity: 1; }
+  40%, 100% { transform: translateY(100px); opacity: 0; }
+}
+
+@keyframes pdf-write {
+  0%, 4% { stroke-dashoffset: 60; }
+  30%, 88% { stroke-dashoffset: 0; opacity: 1; }
+  96%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+@keyframes pdf-flow {
+  to { stroke-dashoffset: -14; }
+}
+
+/* Delays shift the window: the segment appears around 35–45% of its cycle and fades out at the end. */
+@keyframes pdf-segment {
+  0% { opacity: 0; transform: translateX(-10px); }
+  8%, 50% { opacity: 1; transform: translateX(0); }
+  58%, 100% { opacity: 0; transform: translateX(6px); }
+}
+
+.art-soon path,
+.art-soon circle {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.art-soon .ribbon {
+  stroke: var(--blue);
+  opacity: 0.6;
+}
+
+.art-soon .lid {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+  animation: soon-lid 2.8s var(--ease) infinite;
+}
+
+@keyframes soon-lid {
+  0%, 60%, 100% { transform: rotate(0deg) translateY(0); }
+  75% { transform: rotate(-9deg) translateY(-5px); }
+}
+
+.art-soon .spark {
+  stroke: var(--blue);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: soon-twinkle 2.8s var(--ease) infinite;
+}
+
+.art-soon .spark:nth-of-type(2) { animation-delay: 0.9s; }
+.art-soon .spark:nth-of-type(3) { animation-delay: 1.8s; }
+
+@keyframes soon-twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.7) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(45deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .art-pdf *,
+  .art-soon * {
+    animation: none !important;
+  }
+
+  .art-pdf .text path {
+    stroke-dashoffset: 0;
+  }
+
+  .art-pdf .seg {
+    opacity: 1;
+  }
+
+  .art-pdf .scan {
+    opacity: 0;
+  }
+}

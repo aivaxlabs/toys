@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aivax-toys",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "RATE_LIMITER", "class_name": "RateLimiter" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimiter"] }],
+  "routes": [{ "pattern": "toys.aivax.net", "custom_domain": true }],
+  "vars": {
+    // Public site key of the toys.aivax.net Turnstile widget. `.dev.vars` overrides it locally
+    // with Cloudflare's "always passes" test key, because this one only works on toys.aivax.net.
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFM8C4llJXUtMBp2"
+  },
+  "observability": { "enabled": true }
+}

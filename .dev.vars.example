@@ -1,0 +1,9 @@
+# Copy to `.dev.vars` for `wrangler dev`. In production, set these with `wrangler secret put <NAME>`.
+
+# AIVAX API key. Never exposed to the browser; only the Worker talks to AIVAX.
+AIVAX_API_KEY=sk-aiv-...
+
+# Cloudflare's public "always passes" Turnstile test keys. They override the production site key
+# from wrangler.jsonc `vars`, which only works on toys.aivax.net.
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA

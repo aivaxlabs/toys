@@ -1,0 +1,273 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--white);
+  font: inherit;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  line-height: 1;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 160ms var(--ease), border-color 160ms var(--ease), color 160ms var(--ease), opacity 160ms var(--ease);
+}
+
+.button:hover {
+  background: var(--ink-soft);
+  border-color: var(--ink-soft);
+  color: var(--white);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.button.secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.button.secondary:hover {
+  background: var(--surface);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.button.small {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.875rem;
+}
+
+.button i {
+  font-size: 1.1em;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+
+.badge.blue {
+  background: var(--blue-soft);
+  color: var(--blue-strong);
+}
+
+.badge.green {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.badge.amber {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.badge.red {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.tabs button {
+  padding: 0.4rem 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 160ms var(--ease), color 160ms var(--ease);
+}
+
+.tabs button[aria-selected="true"] {
+  background: var(--page-raised);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(23 23 19 / 0.08);
+}
+
+.dropzone {
+  display: grid;
+  place-items: center;
+  gap: 0.5rem;
+  min-height: 12rem;
+  padding: 2rem;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--page-raised);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 160ms var(--ease), background-color 160ms var(--ease);
+}
+
+.dropzone:hover,
+.dropzone.is-over {
+  border-color: var(--blue-strong);
+  background: var(--blue-soft);
+}
+
+.dropzone i {
+  font-size: 2rem;
+  color: var(--blue-strong);
+}
+
+.dropzone strong {
+  font-weight: 500;
+}
+
+.dropzone small {
+  color: var(--muted);
+}
+
+.dropzone input {
+  display: none;
+}
+
+.file-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--page-raised);
+}
+
+.file-chip i {
+  color: var(--red);
+  font-size: 1.4rem;
+}
+
+.file-chip .name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.file-chip button {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.notice {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+
+.notice.error {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.notice.warning {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.notice i {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+pre.code {
+  margin: 0;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--radius);
+  background: #1d1d19;
+  color: #e9e7df;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  tab-size: 2;
+}
+
+pre.code .c {
+  color: #8d9188;
+}
+
+pre.code .k {
+  color: #8cc7f5;
+}
+
+pre.code .s {
+  color: #c5e2a6;
+}
+
+.code-block {
+  position: relative;
+}
+
+.code-block .copy {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 999px;
+  background: #2a2a25;
+  color: #e9e7df;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.code-block .copy:hover {
+  background: #3a3a34;
+}
+
+.spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.5s;
+  }
+}

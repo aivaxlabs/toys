@@ -1,0 +1,16 @@
+{
+  "name": "aivax-toys",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Small, free, open demos of AIVAX features, deployed on Cloudflare Workers.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "node --check src/worker.js && node --check src/rate-limiter.js && node --check public/scripts/site.js && node --check public/scripts/pdf-to-markdown.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.147.0"
+  }
+}
