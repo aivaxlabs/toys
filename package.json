@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "check": "node --check src/worker.js && node --check src/rate-limiter.js && node --check public/scripts/site.js && node --check public/scripts/pdf-to-markdown.js"
+    "check": "node --check src/worker.js && node --check src/rate-limiter.js && node --check public/scripts/site.js && node --check public/scripts/media-to-markdown.js"
   },
   "devDependencies": {
     "wrangler": "^4.147.0"

@@ -1,133 +1,165 @@
-/* PDF → Markdown art: the page is scanned, its lines are written, then three segments drop out. */
+/*
+ * Media → Markdown art: a cursor picks a link, then an image, then a PDF. Each pick lights its
+ * tile and wire, and the Markdown page on the right writes itself again.
+ * The cycle has three equal turns; --turn must stay at a third of --cycle.
+ */
 
-.art-pdf {
-  --cycle: 5.6s;
+.art-media {
+  --cycle: 7.5s;
+  --turn: 2.5s;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.art-pdf .page {
+.art-media .tile > rect {
+  fill: var(--page-raised);
+  stroke: var(--line-strong);
+  stroke-width: 1.4;
+  animation: media-pick-tile var(--cycle) var(--ease) infinite;
+}
+
+.art-media .tile .icon * {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+
+.art-media .tile-image .icon circle {
+  fill: var(--ink);
+  stroke: none;
+}
+
+.art-media .tile .line {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 2.2;
+}
+
+.art-media .wire {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 4;
+  animation: media-pick-wire var(--cycle) var(--ease) infinite, media-flow 1.2s linear infinite;
+}
+
+.art-media .tile-image > rect,
+.art-media .wire-image {
+  animation-delay: var(--turn), 0s;
+}
+
+.art-media .tile-pdf > rect,
+.art-media .wire-pdf {
+  animation-delay: calc(var(--turn) * 2), 0s;
+}
+
+.art-media .flow {
+  fill: none;
+  stroke: var(--blue-strong);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 4;
+  animation: media-flow 1.2s linear infinite;
+}
+
+.art-media .flow-dot {
+  fill: var(--blue-strong);
+}
+
+.art-media .doc > rect:not(.badge-md) {
   fill: var(--page-raised);
   stroke: var(--ink);
   stroke-width: 1.6;
 }
 
-.art-pdf .fold {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 1.6;
+.art-media .doc text:not(.badge-md-label) {
+  fill: var(--blue-strong);
+  font: 600 10px var(--font-mono);
 }
 
-.art-pdf .text path {
+.art-media .md path {
   fill: none;
   stroke: var(--muted);
   stroke-width: 2.2;
   stroke-dasharray: 60;
   stroke-dashoffset: 60;
-  animation: pdf-write var(--cycle) var(--ease) infinite;
+  animation: media-write var(--turn) var(--ease) infinite;
 }
 
-.art-pdf .text .heading {
+.art-media .md .heading {
   stroke: var(--ink);
   stroke-width: 3;
 }
 
-.art-pdf .text path:nth-child(2) { animation-delay: 0.08s; }
-.art-pdf .text path:nth-child(3) { animation-delay: 0.16s; }
-.art-pdf .text path:nth-child(4) { animation-delay: 0.24s; }
-.art-pdf .text path:nth-child(5) { animation-delay: 0.42s; }
-.art-pdf .text path:nth-child(6) { animation-delay: 0.5s; }
-.art-pdf .text path:nth-child(7) { animation-delay: 0.58s; }
+.art-media .md path:nth-child(2) { animation-delay: 0.06s; }
+.art-media .md path:nth-child(3) { animation-delay: 0.12s; }
+.art-media .md path:nth-child(4) { animation-delay: 0.18s; }
+.art-media .md path:nth-child(5) { animation-delay: 0.3s; }
+.art-media .md path:nth-child(6) { animation-delay: 0.36s; }
+.art-media .md path:nth-child(7) { animation-delay: 0.42s; }
 
-.art-pdf .scan {
-  animation: pdf-scan var(--cycle) cubic-bezier(0.45, 0, 0.55, 1) infinite;
+.art-media .badge-md {
+  fill: var(--blue-strong);
+  transform: rotate(6deg);
+  transform-origin: 212px 114px;
 }
 
-.art-pdf .beam {
-  stroke: var(--blue);
-  stroke-width: 1.6;
-}
-
-.art-pdf .badge-pdf {
-  fill: var(--red);
-  transform: rotate(-6deg);
-  transform-origin: 39px 104px;
-}
-
-.art-pdf .badge-pdf-label {
+.art-media .badge-md-label {
   fill: var(--white);
   font: 600 7.5px var(--font-sans);
   text-anchor: middle;
   letter-spacing: 0.04em;
-  transform: rotate(-6deg);
-  transform-origin: 39px 104px;
+  transform: rotate(6deg);
+  transform-origin: 212px 114px;
 }
 
-.art-pdf .flow {
-  fill: none;
-  stroke: var(--blue-strong);
-  stroke-width: 1.4;
-  stroke-dasharray: 3 4;
-  animation: pdf-flow 1.2s linear infinite;
+.art-media .cursor {
+  fill: var(--ink);
+  stroke: var(--page-raised);
+  stroke-width: 1.2;
+  animation: media-cursor var(--cycle) var(--ease) infinite;
 }
 
-.art-pdf .flow-dot {
-  fill: var(--blue-strong);
-}
-
-.art-pdf .seg rect {
-  fill: var(--page-raised);
-  stroke: var(--ink);
-  stroke-width: 1.4;
-}
-
-.art-pdf .seg path {
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 2;
-}
-
-.art-pdf .seg text {
-  fill: var(--blue-strong);
-  font: 600 11px var(--font-mono);
-}
-
-.art-pdf .seg {
-  opacity: 0;
-  animation: pdf-segment var(--cycle) var(--ease) infinite;
-}
-
-.art-pdf .seg-1 { animation-delay: 1.9s; }
-.art-pdf .seg-2 { animation-delay: 2.15s; }
-.art-pdf .seg-3 { animation-delay: 2.4s; }
-
-.toy-card:hover .art-pdf .flow,
-.dropzone:hover .art-pdf .flow {
+.toy-card:hover .art-media .flow,
+.dropzone:hover .art-media .flow,
+.dropzone.is-over .art-media .flow {
   animation-duration: 0.5s;
 }
 
-@keyframes pdf-scan {
-  0% { transform: translateY(0); opacity: 0; }
-  6% { opacity: 1; }
-  34% { transform: translateY(100px); opacity: 1; }
-  40%, 100% { transform: translateY(100px); opacity: 0; }
+/* The cursor visits the tiles 35px apart and clicks just before each tile lights up. */
+@keyframes media-cursor {
+  0%, 5% { transform: translate(0, 0) scale(1); }
+  8% { transform: translate(0, 0) scale(0.82); }
+  11%, 28% { transform: translate(0, 0) scale(1); }
+  35%, 38% { transform: translate(0, 35px) scale(1); }
+  41% { transform: translate(0, 35px) scale(0.82); }
+  44%, 61% { transform: translate(0, 35px) scale(1); }
+  68%, 71% { transform: translate(0, 70px) scale(1); }
+  74% { transform: translate(0, 70px) scale(0.82); }
+  77%, 94% { transform: translate(0, 70px) scale(1); }
+  100% { transform: translate(0, 0) scale(1); }
 }
 
-@keyframes pdf-write {
-  0%, 4% { stroke-dashoffset: 60; }
-  30%, 88% { stroke-dashoffset: 0; opacity: 1; }
+/* Delays shift the window: each tile is picked for most of its own third of the cycle. */
+@keyframes media-pick-tile {
+  0%, 7% { fill: var(--page-raised); stroke: var(--line-strong); }
+  11%, 30% { fill: var(--blue-soft); stroke: var(--blue-strong); }
+  34%, 100% { fill: var(--page-raised); stroke: var(--line-strong); }
+}
+
+@keyframes media-pick-wire {
+  0%, 7% { stroke: var(--line-strong); }
+  11%, 30% { stroke: var(--blue-strong); }
+  34%, 100% { stroke: var(--line-strong); }
+}
+
+@keyframes media-write {
+  0%, 22% { stroke-dashoffset: 60; opacity: 1; }
+  52%, 86% { stroke-dashoffset: 0; opacity: 1; }
   96%, 100% { stroke-dashoffset: 0; opacity: 0; }
 }
 
-@keyframes pdf-flow {
+@keyframes media-flow {
   to { stroke-dashoffset: -14; }
-}
-
-/* Delays shift the window: the segment appears around 35–45% of its cycle and fades out at the end. */
-@keyframes pdf-segment {
-  0% { opacity: 0; transform: translateX(-10px); }
-  8%, 50% { opacity: 1; transform: translateX(0); }
-  58%, 100% { opacity: 0; transform: translateX(6px); }
 }
 
 .art-soon path,
@@ -171,20 +203,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .art-pdf *,
+  .art-media *,
   .art-soon * {
     animation: none !important;
   }
 
-  .art-pdf .text path {
+  .art-media .md path {
     stroke-dashoffset: 0;
-  }
-
-  .art-pdf .seg {
-    opacity: 1;
-  }
-
-  .art-pdf .scan {
-    opacity: 0;
   }
 }

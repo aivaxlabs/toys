@@ -100,8 +100,13 @@
   box-shadow: 0 1px 2px rgb(23 23 19 / 0.04), 0 12px 32px -18px rgb(23 23 19 / 0.18);
 }
 
+.picker {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .tool-card .dropzone {
-  min-height: 18rem;
+  min-height: 17rem;
   gap: 0.4rem;
   border-radius: var(--radius);
   background: var(--page);
@@ -123,16 +128,99 @@
   text-underline-offset: 0.15em;
 }
 
+.or {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding-inline: 1rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.or::before,
+.or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.link-form {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.35rem 0.35rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--page);
+  transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+.link-form:focus-within {
+  border-color: var(--blue-strong);
+  box-shadow: 0 0 0 3px var(--blue-soft);
+}
+
+.link-form > i {
+  font-size: 1.15rem;
+  color: var(--muted);
+}
+
+.link-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  outline: none;
+}
+
+.link-form input::placeholder {
+  color: var(--muted);
+}
+
 .file-row {
   display: flex;
   align-items: center;
   gap: 0.9rem;
   padding: 1rem 1rem 1rem 1.25rem;
+  animation: rise 320ms var(--ease);
 }
 
-.file-row > i {
-  font-size: 2rem;
+.file-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  font-size: 1.6rem;
+  background: var(--surface);
+}
+
+.file-icon[data-kind="pdf"] {
+  background: var(--red-soft);
   color: var(--red);
+}
+
+.file-icon[data-kind="image"] {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.file-icon[data-kind="link"] {
+  background: var(--blue-soft);
+  color: var(--blue-strong);
+}
+
+.file-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .file-meta {
@@ -651,6 +739,16 @@
     width: 100%;
   }
 
+  .link-form {
+    flex-wrap: wrap;
+    padding: 0.35rem 0.35rem 0.35rem 1rem;
+    border-radius: var(--radius);
+  }
+
+  .link-form .button {
+    width: 100%;
+  }
+
   .result-body {
     padding: 1rem;
   }
@@ -664,7 +762,8 @@
   .result,
   .next-step,
   .segment,
-  .call {
+  .call,
+  .file-row {
     animation: none;
   }
 }

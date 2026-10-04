@@ -27,7 +27,7 @@ Live at **[toys.aivax.net](https://toys.aivax.net)**.
 
 | Toy | What it does | AIVAX features | Limits per visitor |
 | --- | --- | --- | --- |
-| [PDF → Markdown](public/pdf-to-markdown/) | Reads any PDF, including scanned pages, into clean Markdown, then splits it into chunks ready for a knowledge base (JSONL download). | [Fetch & OCR](https://docs.aivax.net/docs/web-foundation/fetch-and-ocr), [Text segmentation](https://docs.aivax.net/docs/rag/text-segmentation) | 5 documents / minute, 20 / hour, 10 MB per PDF |
+| [Media → Markdown](public/media-to-markdown/) | Reads a web page link, an image (PNG, JPEG, WebP, TIFF, BMP) or a PDF, including scans, into clean Markdown, then splits it into chunks ready for a knowledge base (JSONL download). | [Fetch & OCR](https://docs.aivax.net/docs/web-foundation/fetch-and-ocr), [Text segmentation](https://docs.aivax.net/docs/rag/text-segmentation) | 5 documents / minute, 20 / hour, 10 MB per file |
 
 Visitors are never billed. The cost shown on each page is an estimate based on [AIVAX's public prices](https://docs.aivax.net/docs/pricing).
 
@@ -94,9 +94,14 @@ The pages use these routes. You can call them yourself against `wrangler dev`; t
 # Limits, max file size, Turnstile site key and remaining quota
 curl http://127.0.0.1:8787/api/config
 
-# PDF → Markdown (multipart)
+# PDF or image → Markdown (multipart)
 curl http://127.0.0.1:8787/api/convert \
   -F "file=@manual.pdf;type=application/pdf" \
+  -F "turnstile=dummy-token"
+
+# Web page link → Markdown (multipart)
+curl http://127.0.0.1:8787/api/convert \
+  -F "url=https://example.com/article" \
   -F "turnstile=dummy-token"
 
 # Markdown → chunks (JSON)
@@ -109,10 +114,10 @@ Successful responses include `markdown` or `segments`, plus `processingUnits`, `
 
 | Status | When |
 | --- | --- |
-| `400` | Missing file, Markdown or Turnstile token, or not a PDF. |
+| `400` | Missing file, link, Markdown or Turnstile token; a file that isn't a PDF or supported image; or a link that isn't `http(s)://`. |
 | `403` | Turnstile verification failed. |
-| `413` | PDF over 10 MB or Markdown over 400,000 characters. |
-| `422` | AIVAX could not read the PDF. |
+| `413` | File over 10 MB, link over 2,048 characters, or Markdown over 400,000 characters. |
+| `422` | AIVAX could not read the file or page (for example, the site blocks automated access). |
 | `429` | Rate limit reached. `Retry-After` says when to try again. |
 | `500` | `AIVAX_API_KEY` is not configured. |
 | `502` / `503` | AIVAX returned an error or is rate-limiting the Worker. |
@@ -162,7 +167,8 @@ Keep pages in English and task-first: use plain language and link the relevant d
 | "Turnstile did not load." | A content blocker is blocking `challenges.cloudflare.com`. Allow it and reload. |
 | "Turnstile verification failed." | The site key and secret don't belong to the same widget, or the hostname isn't allowed on the widget. |
 | `429` while testing | Wait for `Retry-After`. Limits are 5 documents per minute and 20 per hour per IP, set in `LIMITS` in `src/worker.js`. |
-| PDF over 10 MB rejected | That is the AIVAX Fetch API limit per item. Split the PDF first. |
+| File over 10 MB rejected | That is the AIVAX Fetch API limit per item. Split the PDF or shrink the image first. |
+| A link returns an error | The site needs a login or blocks automated access. Use a public URL that returns the page or file itself. |
 
 ## 📄 License
 

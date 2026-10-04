@@ -3,18 +3,29 @@
 const OCR_PRICE_PER_PU = { free: 0.15 / 1000, pro: 0.05 / 1000, max: 0.02 / 1000 };
 const SEGMENT_PRICE_PER_PU = 0.3 / 1_000_000;
 
+const KINDS = {
+  pdf: { icon: "ri-file-pdf-2-fill", action: "Read PDF", working: "Reading your PDF... scanned pages take a little longer" },
+  image: { icon: "ri-image-fill", action: "Read image", working: "Reading the text in your image..." },
+  link: { icon: "ri-global-line", action: "Read page", working: "Opening the page and reading it..." },
+};
+
 const $ = (id) => document.getElementById(id);
 
 const ui = {
   steps: document.querySelectorAll(".steps li"),
+  picker: $("picker"),
   dropzone: $("dropzone"),
   dropzoneHint: $("dropzone-hint"),
   fileInput: $("file-input"),
+  linkForm: $("link-form"),
+  linkInput: $("link-input"),
   fileChip: $("file-chip"),
+  fileIcon: $("file-icon"),
   fileName: $("file-name"),
   fileSize: $("file-size"),
   fileClear: $("file-clear"),
   convert: $("convert"),
+  convertLabel: $("convert-label"),
   convertStatus: $("convert-status"),
   error: $("error"),
   markdownResult: $("markdown-result"),
@@ -44,7 +55,7 @@ const ui = {
 
 const state = {
   config: null,
-  file: null,
+  source: null,
   markdown: "",
   segments: [],
   calls: [],
@@ -122,7 +133,7 @@ function renderSession() {
 
   ui.calls.innerHTML = state.calls.length
     ? ""
-    : '<span class="empty">Nothing yet. Read a PDF to see the requests.</span>';
+    : '<span class="empty">Nothing yet. Read something to see the requests.</span>';
 
   for (const call of [...state.calls].reverse()) {
     const row = document.createElement("div");
@@ -194,39 +205,99 @@ async function trackedCall(route, request) {
 }
 
 // ---------------------------------------------------------------------------
-// File selection
+// Source selection: a PDF, an image or a link
 // ---------------------------------------------------------------------------
 
-function setFile(file) {
+function setSource(source) {
   showError(null);
 
-  if (file && file.size > state.config.maxFileBytes) {
-    showError(`That PDF is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is ${state.config.maxFileBytes / 1024 / 1024} MB.`);
-    file = null;
-  }
+  const preview = ui.fileIcon.querySelector("img");
+  if (preview) URL.revokeObjectURL(preview.src);
 
-  state.file = file;
+  state.source = source;
   state.markdown = "";
   state.segments = [];
-  ui.fileChip.hidden = !file;
-  ui.dropzone.hidden = Boolean(file);
-  ui.convert.disabled = !file;
+  ui.fileChip.hidden = !source;
+  ui.picker.hidden = Boolean(source);
   ui.convert.hidden = false;
   ui.markdownResult.hidden = true;
   ui.segmentActions.hidden = true;
   ui.segmentsResult.hidden = true;
-  setStep(file ? 1 : 0);
+  setStep(source ? 1 : 0);
 
-  if (file) {
-    ui.fileName.textContent = file.name;
-    ui.fileSize.textContent = file.size > 1024 * 1024 ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : `${Math.ceil(file.size / 1024)} KB`;
+  if (!source) return;
+
+  // Browsers can't preview TIFF, so those keep the generic image icon.
+  const canPreview = source.kind === "image" && /^image\/(png|jpeg|webp|bmp)$/.test(source.file.type);
+
+  ui.fileIcon.dataset.kind = source.kind;
+  ui.fileIcon.innerHTML = canPreview
+    ? `<img alt="" src="${URL.createObjectURL(source.file)}">`
+    : `<i class="${KINDS[source.kind].icon}"></i>`;
+  ui.fileName.textContent = source.name;
+  ui.fileSize.textContent = source.detail;
+  ui.convertLabel.textContent = KINDS[source.kind].action;
+}
+
+function setFile(file) {
+  if (!file) return setSource(null);
+
+  const kind = file.type === "application/pdf" || /\.pdf$/i.test(file.name)
+    ? "pdf"
+    : /^image\/(png|jpeg|webp|tiff|bmp)$/.test(file.type) || /\.(png|jpe?g|webp|tiff?|bmp)$/i.test(file.name)
+      ? "image"
+      : null;
+
+  const megabytes = file.size / 1024 / 1024;
+  const limit = state.config.maxFileBytes / 1024 / 1024;
+
+  if (!kind || file.size > state.config.maxFileBytes) {
+    setSource(null);
+    return showError(kind
+      ? `That file is ${megabytes.toFixed(1)} MB. The limit is ${limit} MB.`
+      : "That file type isn't supported. Use a PDF or a PNG, JPEG, WebP, TIFF or BMP image.");
   }
+
+  const size = megabytes >= 1 ? `${megabytes.toFixed(1)} MB` : `${Math.ceil(file.size / 1024)} KB`;
+  setSource({ kind, file, name: file.name, detail: `${kind === "pdf" ? "PDF" : "Image"} · ${size}` });
 }
 
 ui.fileInput.addEventListener("change", () => setFile(ui.fileInput.files[0] ?? null));
 ui.fileClear.addEventListener("click", () => {
   ui.fileInput.value = "";
-  setFile(null);
+  setSource(null);
+  ui.linkInput.focus();
+});
+
+ui.linkForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const raw = ui.linkInput.value.trim();
+  let url;
+
+  try {
+    url = new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`);
+  } catch {}
+
+  if (!raw || !/^https?:$/.test(url?.protocol)) return showError("Paste a full link, like https://example.com/article.");
+
+  setSource({ kind: "link", url: url.href, name: url.hostname + url.pathname.replace(/\/$/, ""), detail: "Link" });
+  convert();
+});
+
+// Pasting anywhere on the page picks an image from the clipboard or fills the link field.
+document.addEventListener("paste", (event) => {
+  if (ui.picker.hidden || event.target.closest?.("input, textarea")) return;
+
+  const file = event.clipboardData.files[0];
+  const text = event.clipboardData.getData("text").trim();
+
+  if (file) {
+    setFile(file);
+  } else if (/^https?:\/\//i.test(text)) {
+    ui.linkInput.value = text;
+    ui.linkInput.focus();
+  }
 });
 
 ["dragenter", "dragover"].forEach((type) =>
@@ -265,8 +336,8 @@ async function renderMarkdown(markdown) {
   ui.markdownRaw.querySelector("pre").textContent = markdown;
 }
 
-ui.convert.addEventListener("click", async () => {
-  if (!state.file) return;
+async function convert() {
+  if (!state.source) return;
 
   showError(null);
   ui.markdownResult.hidden = true;
@@ -280,10 +351,11 @@ ui.convert.addEventListener("click", async () => {
     const turnstileToken = await getTurnstileToken();
 
     const form = new FormData();
-    form.append("file", state.file);
+    if (state.source.url) form.append("url", state.source.url);
+    else form.append("file", state.source.file);
     form.append("turnstile", turnstileToken);
 
-    setBusy(ui.convert, ui.convertStatus, "Reading your PDF... scanned pages take a little longer");
+    setBusy(ui.convert, ui.convertStatus, KINDS[state.source.kind].working);
     const result = await trackedCall("web/fetch", { url: "/api/convert", method: "POST", body: form });
 
     state.markdown = result.markdown;
@@ -301,7 +373,9 @@ ui.convert.addEventListener("click", async () => {
   } finally {
     setBusy(ui.convert, ui.convertStatus, null);
   }
-});
+}
+
+ui.convert.addEventListener("click", convert);
 
 ui.markdownResult.querySelectorAll("[role=tab]").forEach((tab) => {
   tab.addEventListener("click", () => {
@@ -313,7 +387,8 @@ ui.markdownResult.querySelectorAll("[role=tab]").forEach((tab) => {
 });
 
 function baseName() {
-  return state.file.name.replace(/\.pdf$/i, "");
+  const { name, url } = state.source;
+  return url ? name.replace(/[^\w.-]+/g, "-") : name.replace(/\.[^.]+$/, "");
 }
 
 function download(name, content, type) {
@@ -338,14 +413,14 @@ ui.markdownDownload.addEventListener("click", () => download(`${baseName()}.md`,
 // ---------------------------------------------------------------------------
 
 function toJsonl() {
-  const source = state.file.name;
+  const source = state.source.url ?? state.source.name;
   return state.segments
     .map((text, index) =>
       JSON.stringify({
         docid: `${source}#${index + 1}`,
         text,
         __ref: source.slice(0, 64),
-        __tags: ["pdf", "aivax-toys"],
+        __tags: [state.source.kind, "aivax-toys"],
         __meta: { source, index },
       }),
     )
@@ -405,8 +480,8 @@ ui.plan.addEventListener("change", renderSession);
 try {
   state.config = await fetch("/api/config").then((response) => response.json());
   renderQuota(state.config.remaining);
-  ui.dropzoneHint.textContent = `Up to ${state.config.maxFileBytes / 1024 / 1024} MB · text or scanned · never stored`;
+  ui.dropzoneHint.textContent = `PDF, PNG, JPEG, WebP, TIFF or BMP · up to ${state.config.maxFileBytes / 1024 / 1024} MB · never stored`;
 } catch {
   showError("Could not reach the toy backend. Reload the page.");
-  ui.dropzone.hidden = true;
+  ui.picker.hidden = true;
 }

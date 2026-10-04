@@ -11,7 +11,7 @@
 - `src/worker.js` — `/api/config`, `/api/convert`, `/api/segment`; `gate()` (Turnstile + rate limit) and `callAivax()` (upstream call with timing and `x-request-id`).
 - `src/rate-limiter.js` — `RateLimiter` Durable Object, one instance per visitor IP, sliding window with `status(limits)` and `consume(limits)`.
 - `public/index.html` — home page with the toy grid.
-- `public/<toy>/index.html` — one folder per toy (currently `pdf-to-markdown/`).
+- `public/<toy>/index.html` — one folder per toy (currently `media-to-markdown/`, which reads links, images and PDFs). `public/_redirects` keeps the old `/pdf-to-markdown/` URL working.
 - `public/styles/base.css` — design tokens, reset, header/footer. `components/` holds shared controls (`controls.css`) and animated toy icons (`toy-art.css`); `pages/` holds one stylesheet per page.
 - `public/scripts/site.js` — shared code tabs (`#code-tabs`) and code-block copy buttons. `public/scripts/<toy>.js` — page logic.
 
@@ -19,7 +19,8 @@
 - Browser → `POST /api/<route>` with a Turnstile token → `gate()` verifies the token, then consumes one slot in the visitor's Durable Object → `callAivax()` calls `https://inference.aivax.net/api/v1/...` with the secret key → JSON with the result, `processingUnits`, `elapsedMs`, `requestId` and `remaining` quota.
 - Non-`/api/` paths fall through to `env.ASSETS`.
 - Limits live in `LIMITS` in `src/worker.js` (5 documents/minute, 20/hour). `MAX_FILE_BYTES` is 10 MB because the AIVAX Fetch API rejects larger items; do not raise it.
-- Cost shown in the UI is a client-side estimate from the price constants at the top of `public/scripts/pdf-to-markdown.js` (`OCR_PRICE_PER_PU`, `SEGMENT_PRICE_PER_PU`). Keep them aligned with https://docs.aivax.net/docs/pricing.
+- `/api/convert` takes either a `file` (PDF or PNG/JPEG/WebP/TIFF/BMP image, sent as a data URI) or a `url` (`http(s)` only, sent as is) and calls the Fetch API once.
+- Cost shown in the UI is a client-side estimate from the price constants at the top of `public/scripts/media-to-markdown.js` (`OCR_PRICE_PER_PU`, `SEGMENT_PRICE_PER_PU`). Keep them aligned with https://docs.aivax.net/docs/pricing.
 
 ## Commands
 - `bun install` — install `wrangler`.
@@ -39,7 +40,7 @@
 - `[hidden]` is forced to `display: none !important` in `base.css`; toggle visibility with the `hidden` property.
 - Page scripts are ES modules that cache elements in a `ui` object built with `$(id)`. Every `$()` id must exist in the page HTML.
 - Grid children that contain `<pre>` need `minmax(0, 1fr)` columns, or they overflow on mobile.
-- No build step: reference CSS/JS with absolute paths (`/styles/...`, `/scripts/...`). Third-party code is loaded from CDNs (Turnstile; marked + DOMPurify on the PDF page).
+- No build step: reference CSS/JS with absolute paths (`/styles/...`, `/scripts/...`). Third-party code is loaded from CDNs (Turnstile; marked + DOMPurify on the Media → Markdown page).
 
 ## Adding a toy
 1. Create `public/<toy>/index.html`, `public/styles/pages/<toy>.css` and `public/scripts/<toy>.js`, reusing `base.css`, `components/controls.css` and `site.js`.

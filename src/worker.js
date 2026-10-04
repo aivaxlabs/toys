@@ -8,7 +8,20 @@ const LIMITS = { perMinute: 5, perHour: 20 };
 
 // The AIVAX Fetch API caps each item at 10 MB, so the toy cannot accept more than that.
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_URL_CHARS = 2048;
 const MAX_MARKDOWN_CHARS = 400_000;
+
+// File types the Fetch API reads, keyed by extension for uploads that arrive without a MIME type.
+const MEDIA_TYPES = {
+  pdf: "application/pdf",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  tif: "image/tiff",
+  tiff: "image/tiff",
+  bmp: "image/bmp",
+};
 
 const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), {
@@ -107,24 +120,44 @@ async function callAivax(env, path, body) {
 async function convert(request, env) {
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
+  const link = form?.get("url");
 
-  if (!(file instanceof File)) return fail("Attach a PDF in the `file` field.", 400);
-  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) return fail("Only PDF files are accepted.", 400);
-  if (file.size === 0) return fail("The PDF is empty.", 400);
-  if (file.size > MAX_FILE_BYTES) return fail(`The PDF exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB.`, 413);
+  let url;
+  let mediaType;
+
+  if (typeof link === "string" && link.trim()) {
+    try {
+      url = new URL(link.trim());
+    } catch {
+      return fail("That link doesn't look right. Use a full address like https://example.com/page.", 400);
+    }
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") return fail("Only http:// and https:// links are accepted.", 400);
+    if (url.href.length > MAX_URL_CHARS) return fail(`The link exceeds ${MAX_URL_CHARS} characters.`, 413);
+  } else if (file instanceof File) {
+    mediaType = Object.values(MEDIA_TYPES).includes(file.type)
+      ? file.type
+      : MEDIA_TYPES[file.name.split(".").pop().toLowerCase()];
+
+    if (!mediaType) return fail("Only PDFs and PNG, JPEG, WebP, TIFF or BMP images are accepted.", 400);
+    if (file.size === 0) return fail("The file is empty.", 400);
+    if (file.size > MAX_FILE_BYTES) return fail(`The file exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB.`, 413);
+  } else {
+    return fail("Attach a PDF or image in the `file` field, or send a link in the `url` field.", 400);
+  }
 
   const gateResult = await gate(request, env, form.get("turnstile"));
   if (gateResult instanceof Response) return gateResult;
 
-  const base64 = bytesToBase64(new Uint8Array(await file.arrayBuffer()));
-  const call = await callAivax(env, "/web/fetch", {
-    contents: [`data:application/pdf;base64,${base64}`],
-    returnErrors: true,
-  });
+  const content = url
+    ? url.href
+    : `data:${mediaType};base64,${bytesToBase64(new Uint8Array(await file.arrayBuffer()))}`;
+
+  const call = await callAivax(env, "/web/fetch", { contents: [content], returnErrors: true });
 
   const item = call.data?.results?.[0];
 
-  if (!call.ok || !item) return fail(call.message ?? "AIVAX could not process this file.", call.status === 429 ? 503 : 502);
+  if (!call.ok || !item) return fail(call.message ?? "AIVAX could not process this content.", call.status === 429 ? 503 : 502);
   if (item.error) return fail(item.error, 422);
 
   return json({

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PDF to Markdown, ready for RAG — AIVAX Toys</title>
-  <meta name="description" content="Turn any PDF into clean Markdown, including scanned pages, then split it into chunks ready for a knowledge base. Free, powered by AIVAX.">
+  <title>Links, images and PDFs to Markdown, ready for RAG — AIVAX Toys</title>
+  <meta name="description" content="Turn a web page, an image or a PDF into clean Markdown, including scans and screenshots, then split it into chunks ready for a knowledge base. Free, powered by AIVAX.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23171713'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%238cc7f5'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://api.fontshare.com">
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&f[]=sentient@400&display=swap">
@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/styles/base.css">
   <link rel="stylesheet" href="/styles/components/controls.css">
   <link rel="stylesheet" href="/styles/components/toy-art.css">
-  <link rel="stylesheet" href="/styles/pages/pdf-to-markdown.css">
+  <link rel="stylesheet" href="/styles/pages/media-to-markdown.css">
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
 <body>
@@ -31,9 +31,9 @@
     <section class="toy-hero">
       <div class="container">
         <a class="back" href="/"><i class="ri-arrow-left-line"></i> All toys</a>
-        <h1>Make any PDF readable for AI</h1>
+        <h1>Make any link, image or PDF readable for AI</h1>
         <p class="lead">
-          Drop a PDF and get clean, structured text back — even from scanned pages.
+          Paste a link or drop a file and get clean, structured text back — even from scans and screenshots.
           Then split it into bite-sized pieces, ready for a knowledge base.
         </p>
       </div>
@@ -42,73 +42,91 @@
     <section class="tool">
       <div class="container">
         <ol class="steps" aria-label="Progress">
-          <li class="is-active" data-step="upload"><span>1</span> Upload</li>
+          <li class="is-active" data-step="choose"><span>1</span> Choose</li>
           <li data-step="read"><span>2</span> Read</li>
           <li data-step="split"><span>3</span> Split</li>
         </ol>
 
         <div class="tool-card">
-          <label class="dropzone" id="dropzone">
-            <svg class="art-pdf" viewBox="0 0 240 140" aria-hidden="true">
-              <defs>
-                <linearGradient id="scan-glow" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stop-color="#2079c2" stop-opacity="0" />
-                  <stop offset="1" stop-color="#2079c2" stop-opacity="0.28" />
-                </linearGradient>
-                <clipPath id="page-clip">
-                  <path d="M36 21 h45 l19 19 v77 q0 4 -4 4 h-60 q-4 0 -4 -4 v-92 q0 -4 4 -4z" />
-                </clipPath>
-              </defs>
-              <path class="page" d="M36 21 h45 l19 19 v77 q0 4 -4 4 h-60 q-4 0 -4 -4 v-92 q0 -4 4 -4z" />
-              <path class="fold" d="M81 21.5 v13 q0 5 5 5 h13.5" />
-              <g class="text">
-                <path d="M42 50 h24" class="heading" />
-                <path d="M42 60 q12 -1 24 0 t22 0" />
-                <path d="M42 68 q10 1 20 0 t20 0" />
-                <path d="M42 76 q8 -1 16 0 t14 0" />
-                <path d="M42 88 h18" class="heading" />
-                <path d="M42 98 q12 1 24 0 t22 0" />
-                <path d="M42 106 q9 -1 18 0 t12 0" />
-              </g>
-              <g clip-path="url(#page-clip)">
-                <g class="scan">
-                  <rect x="30" y="8" width="74" height="14" fill="url(#scan-glow)" />
-                  <path d="M30 22 h74" class="beam" />
+          <div class="picker" id="picker">
+            <label class="dropzone" id="dropzone">
+              <svg class="art-media" viewBox="0 0 240 140" aria-hidden="true">
+                <path class="wire wire-link" d="M96 35 C110 35 108 70 122 70" />
+                <path class="wire wire-image" d="M96 70 H122" />
+                <path class="wire wire-pdf" d="M96 105 C110 105 108 70 122 70" />
+                <path class="flow" d="M122 70 H146" />
+                <circle class="flow-dot" cx="122" cy="70" r="2.6" />
+
+                <g class="tile tile-link">
+                  <rect x="18" y="20" width="78" height="30" rx="6" />
+                  <g class="icon">
+                    <circle cx="33" cy="35" r="6.5" />
+                    <ellipse cx="33" cy="35" rx="2.8" ry="6.5" />
+                    <path d="M26.5 35 h13" />
+                  </g>
+                  <path class="line" d="M46 31 h38 M46 39 h26" />
                 </g>
-              </g>
-              <rect class="badge-pdf" x="26" y="98" width="26" height="13" rx="3" />
-              <text class="badge-pdf-label" x="39" y="107.6">PDF</text>
-              <path class="flow" d="M106 70 C124 70 122 38 140 38 M106 70 H140 M106 70 C124 70 122 102 140 102" />
-              <circle class="flow-dot" cx="106" cy="70" r="2.6" />
-              <g class="seg seg-1">
-                <rect x="146" y="26" width="70" height="24" rx="5" />
-                <text x="153" y="42">#</text>
-                <path d="M166 34 h38 M166 42 q10 -1 20 0 t8 0" />
-              </g>
-              <g class="seg seg-2">
-                <rect x="146" y="58" width="70" height="24" rx="5" />
-                <text x="153" y="74">#</text>
-                <path d="M166 66 h30 M166 74 q12 1 24 0 t10 0" />
-              </g>
-              <g class="seg seg-3">
-                <rect x="146" y="90" width="70" height="24" rx="5" />
-                <text x="153" y="106">#</text>
-                <path d="M166 98 h34 M166 106 q8 -1 16 0 t6 0" />
-              </g>
-            </svg>
-            <strong>Drop a PDF here, or <u>browse</u></strong>
-            <small id="dropzone-hint">Up to 10 MB · text or scanned · never stored</small>
-            <input type="file" id="file-input" accept="application/pdf,.pdf">
-          </label>
+                <g class="tile tile-image">
+                  <rect x="18" y="55" width="78" height="30" rx="6" />
+                  <g class="icon">
+                    <rect x="26" y="62" width="15" height="16" rx="2" />
+                    <path d="M26.5 76 l4.5 -5 l3 3 l3 -4 l4 5.5" />
+                    <circle cx="36.5" cy="66" r="1.6" />
+                  </g>
+                  <path class="line" d="M46 66 h34 M46 74 h22" />
+                </g>
+                <g class="tile tile-pdf">
+                  <rect x="18" y="90" width="78" height="30" rx="6" />
+                  <g class="icon">
+                    <path d="M27 96 h8 l5 5 v12 q0 1 -1 1 h-12 q-1 0 -1 -1 v-16 q0 -1 1 -1z" />
+                    <path d="M35 96 v5 h5" />
+                  </g>
+                  <path class="line" d="M46 101 h36 M46 109 h28" />
+                </g>
+
+                <g class="doc">
+                  <rect x="148" y="22" width="72" height="96" rx="6" />
+                  <text x="155" y="42">#</text>
+                  <text x="155" y="86">##</text>
+                  <g class="md">
+                    <path class="heading" d="M166 38 h36" />
+                    <path d="M156 52 h56" />
+                    <path d="M156 60 h48" />
+                    <path d="M156 68 h52" />
+                    <path class="heading" d="M172 82 h28" />
+                    <path d="M156 96 h54" />
+                    <path d="M156 104 h38" />
+                  </g>
+                  <rect class="badge-md" x="200" y="108" width="24" height="13" rx="3" />
+                  <text class="badge-md-label" x="212" y="117.6">MD</text>
+                </g>
+
+                <g transform="translate(86 40)">
+                  <path class="cursor" d="M0 0 V14 L3.8 10.6 L6.6 16.4 L9 15.3 L6.3 9.6 L11.2 9.6 Z" />
+                </g>
+              </svg>
+              <strong>Drop a PDF or image here, or <u>browse</u></strong>
+              <small id="dropzone-hint">PDF, PNG, JPEG, WebP, TIFF or BMP · up to 10 MB · never stored</small>
+              <input type="file" id="file-input" accept="application/pdf,.pdf,image/png,image/jpeg,image/webp,image/tiff,image/bmp,.png,.jpg,.jpeg,.webp,.tif,.tiff,.bmp">
+            </label>
+
+            <p class="or">or read a web page</p>
+
+            <form class="link-form" id="link-form">
+              <i class="ri-link"></i>
+              <input type="text" id="link-input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Paste a link, like https://example.com/article" aria-label="Link to a web page or file">
+              <button class="button" type="submit">Read link <i class="ri-arrow-right-line"></i></button>
+            </form>
+          </div>
 
           <div class="file-row" id="file-chip" hidden>
-            <i class="ri-file-pdf-2-fill"></i>
+            <span class="file-icon" id="file-icon"></span>
             <div class="file-meta">
               <span class="name" id="file-name"></span>
               <span class="muted" id="file-size"></span>
             </div>
             <button type="button" class="link-button" id="file-clear">Change</button>
-            <button class="button" id="convert">Read PDF <i class="ri-arrow-right-line"></i></button>
+            <button class="button" id="convert"><span id="convert-label">Read PDF</span> <i class="ri-arrow-right-line"></i></button>
           </div>
 
           <p class="working" id="convert-status" hidden></p>
@@ -183,8 +201,8 @@
             <i class="ri-scan-2-line"></i>
             <h3>Read</h3>
             <p>
-              AIVAX pulls the text out of your PDF and keeps its structure — headings, lists, tables.
-              Pages that are just images get read with OCR. <a href="https://docs.aivax.net/docs/web-foundation/fetch-and-ocr">Fetch &amp; OCR</a>
+              AIVAX opens the page or file and pulls out its text, keeping the structure — headings, lists, tables.
+              Web pages lose their menus and ads; images and scanned pages get read with OCR. <a href="https://docs.aivax.net/docs/web-foundation/fetch-and-ocr">Fetch &amp; OCR</a>
             </p>
           </div>
           <div>
@@ -199,7 +217,7 @@
             <i class="ri-database-2-line"></i>
             <h3>Search</h3>
             <p>
-              Load the chunks into a collection and your assistant can find and quote the right passage of your document.
+              Load the chunks into a collection and your assistant can find and quote the right passage of your content.
               <a href="https://docs.aivax.net/docs/rag/collections">Collections</a>
             </p>
           </div>
@@ -223,7 +241,7 @@
             <div class="dev-grid">
               <div>
                 <h3>Calls made by this page</h3>
-                <div class="calls" id="calls"><span class="empty">Nothing yet. Read a PDF to see the requests.</span></div>
+                <div class="calls" id="calls"><span class="empty">Nothing yet. Read something to see the requests.</span></div>
                 <dl class="dev-stats">
                   <div><dt>API calls</dt><dd id="m-calls">0</dd></div>
                   <div><dt>Processing units</dt><dd id="m-pus">0</dd></div>
@@ -259,12 +277,17 @@
                 </div>
         <div class="code-panel code-block" data-panel="curl">
           <button class="copy" type="button">Copy</button>
-<pre class="code"><span class="c"># 1. PDF → Markdown. Inline the file as a base64 data URI (10 MB max per item).</span>
+<pre class="code"><span class="c"># 1. Media → Markdown. Send links as they are and inline files as base64 data URIs
+#    with their real MIME type (10 MB max per item). One call can mix several items.</span>
 curl https://inference.aivax.net/api/v1/web/fetch \
   -H <span class="s">"Authorization: Bearer $AIVAX_API_KEY"</span> \
   -H <span class="s">"Content-Type: application/json"</span> \
   -d <span class="s">"{
-    \"contents\": [\"data:application/pdf;base64,$(base64 -w0 manual.pdf)\"],
+    \"contents\": [
+      \"https://example.com/article\",
+      \"data:application/pdf;base64,$(base64 -w0 manual.pdf)\",
+      \"data:image/png;base64,$(base64 -w0 receipt.png)\"
+    ],
     \"returnErrors\": true
   }"</span>
 
@@ -273,7 +296,7 @@ curl https://inference.aivax.net/api/v1/web/fetch \
 #       "extractedText": "# Title\n\nParagraph...",   ← Markdown
 #       "processingUnits": 7,                      ← what you pay for
 #       "jsonProcessingUnits": 0,
-#       "error": null } ] } }</span>
+#       "error": null }, ... ] } }               ← one result per item, in order</span>
 
 <span class="c"># 2. Markdown → segments. `sanitize` skips fragments that are useless for retrieval.</span>
 curl https://inference.aivax.net/api/v1/generations/segment \
@@ -295,15 +318,13 @@ curl https://inference.aivax.net/api/v1/generations/segment \
   <span class="s">"content-type"</span>: <span class="s">"application/json"</span>,
 };
 
-<span class="c">// 1. PDF → Markdown</span>
-<span class="k">async function</span> pdfToMarkdown(bytes) {
-  <span class="k">const</span> base64 = Buffer.from(bytes).toString(<span class="s">"base64"</span>);
-
+<span class="c">// 1. Media → Markdown. `content` is a link or a data URI.</span>
+<span class="k">async function</span> toMarkdown(content) {
   <span class="k">const</span> response = <span class="k">await</span> fetch(<span class="s">`${AIVAX}/web/fetch`</span>, {
     method: <span class="s">"POST"</span>,
     headers,
     body: JSON.stringify({
-      contents: [<span class="s">`data:application/pdf;base64,${base64}`</span>],
+      contents: [content],
       returnErrors: <span class="k">true</span>,
     }),
   });
@@ -336,14 +357,18 @@ curl https://inference.aivax.net/api/v1/generations/segment \
       docid: <span class="s">`${source}#${index + 1}`</span>,       <span class="c">// stable name: re-importing updates instead of duplicating</span>
       text,
       __ref: source.slice(0, 64),           <span class="c">// groups the chunks of one file</span>
-      __tags: [<span class="s">"pdf"</span>],
+      __tags: [<span class="s">"aivax-toys"</span>],
       __meta: { source, index },
     }))
     .join(<span class="s">"\n"</span>);
 }
 
-<span class="k">const</span> bytes = <span class="k">await</span> Bun.file(<span class="s">"manual.pdf"</span>).arrayBuffer();
-<span class="k">const</span> { markdown } = <span class="k">await</span> pdfToMarkdown(bytes);
+<span class="c">// A web page is read straight from its link...</span>
+<span class="k">const</span> page = <span class="k">await</span> toMarkdown(<span class="s">"https://example.com/article"</span>);
+
+<span class="c">// ...while PDFs and images go inline with their MIME type.</span>
+<span class="k">const</span> base64 = Buffer.from(<span class="k">await</span> Bun.file(<span class="s">"manual.pdf"</span>).arrayBuffer()).toString(<span class="s">"base64"</span>);
+<span class="k">const</span> { markdown } = <span class="k">await</span> toMarkdown(<span class="s">`data:application/pdf;base64,${base64}`</span>);
 <span class="k">const</span> { segments } = <span class="k">await</span> segmentForRag(markdown);
 
 <span class="k">await</span> Bun.write(<span class="s">"manual.jsonl"</span>, toJsonl(segments, <span class="s">"manual.pdf"</span>));</pre>
@@ -362,15 +387,16 @@ curl https://inference.aivax.net/api/v1/generations/segment \
     <span class="k">if</span> (url.pathname === <span class="s">"/api/convert"</span> &amp;&amp; request.method === <span class="s">"POST"</span>) {
       <span class="k">const</span> form = <span class="k">await</span> request.formData();
       <span class="k">const</span> file = form.get(<span class="s">"file"</span>);
+      <span class="k">const</span> url = form.get(<span class="s">"url"</span>);
 
       <span class="k">const</span> gate = <span class="k">await</span> verifyTurnstileAndQuota(request, env, form.get(<span class="s">"turnstile"</span>));
       <span class="k">if</span> (gate <span class="k">instanceof</span> Response) <span class="k">return</span> gate;      <span class="c">// 403 or 429</span>
 
-      <span class="k">const</span> base64 = bytesToBase64(<span class="k">new</span> Uint8Array(<span class="k">await</span> file.arrayBuffer()));
-      <span class="k">const</span> call = <span class="k">await</span> callAivax(env, <span class="s">"/web/fetch"</span>, {
-        contents: [<span class="s">`data:application/pdf;base64,${base64}`</span>],
-        returnErrors: <span class="k">true</span>,
-      });
+      <span class="k">const</span> content = url
+        ? url                                                    <span class="c">// AIVAX opens the link itself</span>
+        : <span class="s">`data:${file.type};base64,${bytesToBase64(<span class="k">new</span> Uint8Array(<span class="k">await</span> file.arrayBuffer()))}`</span>;
+
+      <span class="k">const</span> call = <span class="k">await</span> callAivax(env, <span class="s">"/web/fetch"</span>, { contents: [content], returnErrors: <span class="k">true</span> });
 
       <span class="k">const</span> item = call.data.results[0];
       <span class="k">return</span> Response.json({
@@ -421,6 +447,6 @@ curl https://inference.aivax.net/api/v1/generations/segment \
   </footer>
 
   <script type="module" src="/scripts/site.js"></script>
-  <script type="module" src="/scripts/pdf-to-markdown.js"></script>
+  <script type="module" src="/scripts/media-to-markdown.js"></script>
 </body>
 </html>
