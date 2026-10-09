@@ -27,6 +27,7 @@ const ui = {
   convert: $("convert"),
   convertLabel: $("convert-label"),
   convertStatus: $("convert-status"),
+  convertTurnstile: $("convert-turnstile"),
   error: $("error"),
   markdownResult: $("markdown-result"),
   markdownStats: $("markdown-stats"),
@@ -37,6 +38,7 @@ const ui = {
   segmentActions: $("segment-actions"),
   segment: $("segment"),
   segmentStatus: $("segment-status"),
+  segmentTurnstile: $("segment-turnstile"),
   sanitize: $("sanitize"),
   segmentsResult: $("segments-result"),
   segmentsStats: $("segments-stats"),
@@ -62,12 +64,10 @@ const state = {
 };
 
 // ---------------------------------------------------------------------------
-// Turnstile: one invisible widget, executed on demand so every request carries
-// a fresh single-use token.
+// Turnstile: one invisible widget, rendered on demand next to the action that
+// asked for it, so a challenge shows up where the visitor is looking and every
+// request carries a fresh single-use token.
 // ---------------------------------------------------------------------------
-
-let widgetId;
-let tokenWaiter;
 
 const turnstileReady = new Promise((resolve, reject) => {
   const startedAt = Date.now();
@@ -79,25 +79,21 @@ const turnstileReady = new Promise((resolve, reject) => {
   poll();
 });
 
-async function getTurnstileToken() {
+async function getTurnstileToken(container, statusEl) {
   await turnstileReady;
 
-  if (widgetId === undefined) {
-    widgetId = turnstile.render("#turnstile", {
-      sitekey: state.config.turnstileSiteKey,
-      execution: "execute",
-      appearance: "interaction-only",
-      callback: (token) => tokenWaiter?.resolve(token),
-      "error-callback": () => tokenWaiter?.reject(new Error("Turnstile could not verify this browser.")),
-      "expired-callback": () => tokenWaiter?.reject(new Error("Turnstile token expired. Try again.")),
-    });
-  }
+  let widgetId;
 
   return new Promise((resolve, reject) => {
-    tokenWaiter = { resolve, reject };
-    turnstile.reset(widgetId);
-    turnstile.execute(widgetId);
-  });
+    widgetId = turnstile.render(container, {
+      sitekey: state.config.turnstileSiteKey,
+      appearance: "interaction-only",
+      callback: resolve,
+      "before-interactive-callback": () => (statusEl.textContent = "Confirm you're human below to continue."),
+      "error-callback": () => reject(new Error("Turnstile could not verify this browser.")),
+      "expired-callback": () => reject(new Error("Turnstile token expired. Try again.")),
+    });
+  }).finally(() => turnstile.remove(widgetId));
 }
 
 // ---------------------------------------------------------------------------
@@ -348,7 +344,7 @@ async function convert() {
 
   try {
     setBusy(ui.convert, ui.convertStatus, "Getting ready...");
-    const turnstileToken = await getTurnstileToken();
+    const turnstileToken = await getTurnstileToken(ui.convertTurnstile, ui.convertStatus);
 
     const form = new FormData();
     if (state.source.url) form.append("url", state.source.url);
@@ -433,7 +429,7 @@ ui.segment.addEventListener("click", async () => {
 
   try {
     setBusy(ui.segment, ui.segmentStatus, "Getting ready...");
-    const turnstileToken = await getTurnstileToken();
+    const turnstileToken = await getTurnstileToken(ui.segmentTurnstile, ui.segmentStatus);
 
     setBusy(ui.segment, ui.segmentStatus, "Finding where each topic starts and ends...");
     const result = await trackedCall("generations/segment", {

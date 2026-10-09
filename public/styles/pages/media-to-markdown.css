@@ -417,6 +417,22 @@
   padding: 0;
 }
 
+.turnstile {
+  display: flex;
+  justify-content: center;
+  padding: 0 1rem 1rem;
+}
+
+.turnstile:empty {
+  display: none;
+}
+
+.next-step .turnstile {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  padding: 0;
+}
+
 .toggle {
   display: inline-flex;
   align-items: center;

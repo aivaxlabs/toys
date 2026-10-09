@@ -106,14 +106,20 @@ async function callAivax(env, path, body) {
   });
 
   const payload = await response.json().catch(() => ({}));
+  const requestId = response.headers.get("x-request-id");
+
+  // AIVAX reports failures as `{ error, details }`; successful envelopes carry `{ message, data }`.
+  const message = payload.error ?? payload.message;
+
+  if (!response.ok) console.error(`AIVAX ${path} failed`, { status: response.status, requestId, message });
 
   return {
     ok: response.ok,
     status: response.status,
     elapsedMs: Date.now() - startedAt,
-    requestId: response.headers.get("x-request-id"),
+    requestId,
     data: payload.data,
-    message: payload.message,
+    message,
   };
 }
 
@@ -187,6 +193,7 @@ async function segment(request, env) {
   const result = call.data?.result?.[0];
 
   if (!call.ok || !result) return fail(call.message ?? "AIVAX could not segment this text.", call.status === 429 ? 503 : 502);
+  if (result.error) return fail(result.error, 422);
 
   return json({
     segments: result.segments,
