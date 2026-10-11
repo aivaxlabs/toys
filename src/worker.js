@@ -6,8 +6,8 @@ const TURNSTILE_VERIFY = "https://challenges.cloudflare.com/turnstile/v0/sitever
 // Every conversion or segmentation counts as one document against both windows.
 const LIMITS = { perMinute: 5, perHour: 20 };
 
-// The AIVAX Fetch API caps each item at 10 MB, so the toy cannot accept more than that.
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
+// The AIVAX Fetch API caps each item at 50 MB, so the toy cannot accept more than that.
+const MAX_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_URL_CHARS = 2048;
 const MAX_MARKDOWN_CHARS = 400_000;
 
@@ -102,7 +102,7 @@ async function callAivax(env, path, body) {
   const response = await fetch(`${AIVAX_API}${path}`, {
     method: "POST",
     headers: { authorization: `Bearer ${env.AIVAX_API_KEY}`, "content-type": "application/json" },
-    body: JSON.stringify(body),
+    body,
   });
 
   const payload = await response.json().catch(() => ({}));
@@ -155,11 +155,11 @@ async function convert(request, env) {
   const gateResult = await gate(request, env, form.get("turnstile"));
   if (gateResult instanceof Response) return gateResult;
 
-  const content = url
-    ? url.href
-    : `data:${mediaType};base64,${bytesToBase64(new Uint8Array(await file.arrayBuffer()))}`;
+  const body = url
+    ? JSON.stringify({ contents: [url.href], returnErrors: true })
+    : fileFetchBody(file, mediaType);
 
-  const call = await callAivax(env, "/web/fetch", { contents: [content], returnErrors: true });
+  const call = await callAivax(env, "/web/fetch", body);
 
   const item = call.data?.results?.[0];
 
@@ -185,10 +185,10 @@ async function segment(request, env) {
   const gateResult = await gate(request, env, body.turnstile);
   if (gateResult instanceof Response) return gateResult;
 
-  const call = await callAivax(env, "/generations/segment", {
+  const call = await callAivax(env, "/generations/segment", JSON.stringify({
     documents: [markdown],
     sanitize: body.sanitize !== false,
-  });
+  }));
 
   const result = call.data?.result?.[0];
 
@@ -205,7 +205,42 @@ async function segment(request, env) {
   });
 }
 
-// btoa() on a 10 MB binary string blows the call stack when spread; encode in chunks instead.
+/**
+ * Streams `{ contents: [dataUri], returnErrors: true }` with a known length. Building the base64 data URI
+ * and its JSON as strings would hold several copies of a 50 MB file and exceed the Worker's 128 MB memory.
+ */
+function fileFetchBody(file, mediaType) {
+  const encoder = new TextEncoder();
+  const prefix = encoder.encode(`{"contents":["data:${mediaType};base64,`);
+  const suffix = encoder.encode(`"],"returnErrors":true}`);
+  const { readable, writable } = new FixedLengthStream(prefix.length + Math.ceil(file.size / 3) * 4 + suffix.length);
+  const writer = writable.getWriter();
+
+  (async () => {
+    await writer.write(prefix);
+
+    // Base64 maps 3 bytes to 4 characters, so only whole 3-byte groups are encoded per chunk.
+    let carry = new Uint8Array(0);
+
+    for await (const chunk of file.stream()) {
+      const bytes = new Uint8Array(carry.length + chunk.length);
+      bytes.set(carry);
+      bytes.set(chunk, carry.length);
+
+      const whole = bytes.length - (bytes.length % 3);
+      carry = bytes.slice(whole);
+      await writer.write(encoder.encode(bytesToBase64(bytes.subarray(0, whole))));
+    }
+
+    await writer.write(encoder.encode(bytesToBase64(carry)));
+    await writer.write(suffix);
+    await writer.close();
+  })().catch((error) => writer.abort(error));
+
+  return readable;
+}
+
+// btoa() on a large binary string blows the call stack when spread; encode in chunks instead.
 function bytesToBase64(bytes) {
   const chunks = [];
   for (let offset = 0; offset < bytes.length; offset += 0x8000) {

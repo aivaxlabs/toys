@@ -18,7 +18,7 @@
 ## Architecture and flow
 - Browser → `POST /api/<route>` with a Turnstile token → `gate()` verifies the token, then consumes one slot in the visitor's Durable Object → `callAivax()` calls `https://inference.aivax.net/api/v1/...` with the secret key → JSON with the result, `processingUnits`, `elapsedMs`, `requestId` and `remaining` quota.
 - Non-`/api/` paths fall through to `env.ASSETS`.
-- Limits live in `LIMITS` in `src/worker.js` (5 documents/minute, 20/hour). `MAX_FILE_BYTES` is 10 MB because the AIVAX Fetch API rejects larger items; do not raise it.
+- Limits live in `LIMITS` in `src/worker.js` (5 documents/minute, 20/hour). `MAX_FILE_BYTES` is 50 MB because the AIVAX Fetch API rejects larger items; do not raise it.
 - `/api/convert` takes either a `file` (PDF or PNG/JPEG/WebP/TIFF/BMP image, sent as a data URI) or a `url` (`http(s)` only, sent as is) and calls the Fetch API once.
 - Cost shown in the UI is a client-side estimate from the price constants at the top of `public/scripts/media-to-markdown.js` (`OCR_PRICE_PER_PU`, `SEGMENT_PRICE_PER_PU`). Keep them aligned with https://docs.aivax.net/docs/pricing.
 
