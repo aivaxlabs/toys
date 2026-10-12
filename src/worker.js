@@ -1,6 +1,7 @@
 export { RateLimiter } from "./rate-limiter.js";
 
-const AIVAX_API = "https://inference.aivax.net/api/v1";
+// The direct host bypasses the Cloudflare proxy timeout, so large documents don't end in HTTP 524.
+const AIVAX_API = "https://direct.inference.aivax.net/api/v1";
 const TURNSTILE_VERIFY = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
 // Every conversion or segmentation counts as one document against both windows.

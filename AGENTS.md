@@ -16,7 +16,7 @@
 - `public/scripts/site.js` — shared code tabs (`#code-tabs`) and code-block copy buttons. `public/scripts/<toy>.js` — page logic.
 
 ## Architecture and flow
-- Browser → `POST /api/<route>` with a Turnstile token → `gate()` verifies the token, then consumes one slot in the visitor's Durable Object → `callAivax()` calls `https://inference.aivax.net/api/v1/...` with the secret key → JSON with the result, `processingUnits`, `elapsedMs`, `requestId` and `remaining` quota.
+- Browser → `POST /api/<route>` with a Turnstile token → `gate()` verifies the token, then consumes one slot in the visitor's Durable Object → `callAivax()` calls `https://direct.inference.aivax.net/api/v1/...` (the long-inference host, which skips the Cloudflare proxy timeout; use it for every new route it exposes) with the secret key → JSON with the result, `processingUnits`, `elapsedMs`, `requestId` and `remaining` quota.
 - Non-`/api/` paths fall through to `env.ASSETS`.
 - Limits live in `LIMITS` in `src/worker.js` (5 documents/minute, 20/hour). `MAX_FILE_BYTES` is 50 MB because the AIVAX Fetch API rejects larger items; do not raise it.
 - `/api/convert` takes either a `file` (PDF or PNG/JPEG/WebP/TIFF/BMP image, sent as a data URI) or a `url` (`http(s)` only, sent as is) and calls the Fetch API once.

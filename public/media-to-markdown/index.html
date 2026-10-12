@@ -279,7 +279,7 @@
           <button class="copy" type="button">Copy</button>
 <pre class="code"><span class="c"># 1. Media → Markdown. Send links as they are and inline files as base64 data URIs
 #    with their real MIME type (50 MB max per item). One call can mix several items.</span>
-curl https://inference.aivax.net/api/v1/web/fetch \
+curl https://direct.inference.aivax.net/api/v1/web/fetch \
   -H <span class="s">"Authorization: Bearer $AIVAX_API_KEY"</span> \
   -H <span class="s">"Content-Type: application/json"</span> \
   -d <span class="s">"{
@@ -299,7 +299,7 @@ curl https://inference.aivax.net/api/v1/web/fetch \
 #       "error": null }, ... ] } }               ← one result per item, in order</span>
 
 <span class="c"># 2. Markdown → segments. `sanitize` skips fragments that are useless for retrieval.</span>
-curl https://inference.aivax.net/api/v1/generations/segment \
+curl https://direct.inference.aivax.net/api/v1/generations/segment \
   -H <span class="s">"Authorization: Bearer $AIVAX_API_KEY"</span> \
   -H <span class="s">"Content-Type: application/json"</span> \
   -d <span class="s">'{ "documents": ["# Title\n\nParagraph..."], "sanitize": true }'</span>
@@ -312,7 +312,7 @@ curl https://inference.aivax.net/api/v1/generations/segment \
         <div class="code-panel code-block" data-panel="js" hidden>
           <button class="copy" type="button">Copy</button>
 <pre class="code"><span class="c">// Works in Node 18+, Bun, Deno and browsers. Keep the API key server-side.</span>
-<span class="k">const</span> AIVAX = <span class="s">"https://inference.aivax.net/api/v1"</span>;
+<span class="k">const</span> AIVAX = <span class="s">"https://direct.inference.aivax.net/api/v1"</span>;
 <span class="k">const</span> headers = {
   authorization: <span class="s">`Bearer ${process.env.AIVAX_API_KEY}`</span>,
   <span class="s">"content-type"</span>: <span class="s">"application/json"</span>,
@@ -378,7 +378,7 @@ curl https://inference.aivax.net/api/v1/generations/segment \
           <button class="copy" type="button">Copy</button>
 <pre class="code"><span class="c">// Trimmed from src/worker.js in the repository. The real file adds Turnstile
 // verification and a Durable Object sliding-window rate limiter.</span>
-<span class="k">const</span> AIVAX_API = <span class="s">"https://inference.aivax.net/api/v1"</span>;
+<span class="k">const</span> AIVAX_API = <span class="s">"https://direct.inference.aivax.net/api/v1"</span>;
 
 <span class="k">export default</span> {
   <span class="k">async</span> fetch(request, env) {

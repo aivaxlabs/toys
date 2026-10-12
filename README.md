@@ -39,7 +39,7 @@ sequenceDiagram
     participant W as Cloudflare Worker
     participant T as Turnstile
     participant D as RateLimiter (Durable Object, per IP)
-    participant A as inference.aivax.net
+    participant A as direct.inference.aivax.net
 
     B->>W: POST /api/convert or /api/segment + Turnstile token
     W->>T: siteverify(token)
