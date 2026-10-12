@@ -27,7 +27,7 @@ Live at **[toys.aivax.net](https://toys.aivax.net)**.
 
 | Toy | What it does | AIVAX features | Limits per visitor |
 | --- | --- | --- | --- |
-| [Media → Markdown](public/media-to-markdown/) | Reads a web page link, an image (PNG, JPEG, WebP, TIFF, BMP) or a PDF, including scans, into clean Markdown, then splits it into chunks ready for a knowledge base (JSONL download). | [Fetch & OCR](https://docs.aivax.net/docs/web-foundation/fetch-and-ocr), [Text segmentation](https://docs.aivax.net/docs/rag/text-segmentation) | 5 documents / minute, 20 / hour, 50 MB per file |
+| [Media → Markdown](public/media-to-markdown/) | Reads a web page link, an image (PNG, JPEG, WebP, TIFF, BMP) or a PDF, including scans, into clean Markdown, then splits it into chunks ready for a knowledge base (JSONL download). | [Fetch & OCR](https://docs.aivax.net/docs/web-foundation/fetch-and-ocr), [Text segmentation](https://docs.aivax.net/docs/rag/text-segmentation) | 5 documents / minute, 20 / hour, 10 MB per file |
 
 Visitors are never billed. The cost shown on each page is an estimate based on [AIVAX's public prices](https://docs.aivax.net/docs/pricing).
 
@@ -116,7 +116,7 @@ Successful responses include `markdown` or `segments`, plus `processingUnits`, `
 | --- | --- |
 | `400` | Missing file, link, Markdown or Turnstile token; a file that isn't a PDF or supported image; or a link that isn't `http(s)://`. |
 | `403` | Turnstile verification failed. |
-| `413` | File over 50 MB, link over 2,048 characters, or Markdown over 400,000 characters. |
+| `413` | File over 10 MB, link over 2,048 characters, or Markdown over 400,000 characters. |
 | `422` | AIVAX could not read the file or page (for example, the site blocks automated access). |
 | `429` | Rate limit reached. `Retry-After` says when to try again. |
 | `500` | `AIVAX_API_KEY` is not configured. |
@@ -167,7 +167,7 @@ Keep pages in English and task-first: use plain language and link the relevant d
 | "Turnstile did not load." | A content blocker is blocking `challenges.cloudflare.com`. Allow it and reload. |
 | "Turnstile verification failed." | The site key and secret don't belong to the same widget, or the hostname isn't allowed on the widget. |
 | `429` while testing | Wait for `Retry-After`. Limits are 5 documents per minute and 20 per hour per IP, set in `LIMITS` in `src/worker.js`. |
-| File over 50 MB rejected | That is the AIVAX Fetch API limit per item. Split the PDF or shrink the image first. |
+| File over 10 MB rejected | The Fetch API accepts 50 MB, but Workers cut outbound requests at about 125 s and large scans take longer. Split the PDF or shrink the image first. |
 | A link returns an error | The site needs a login or blocks automated access. Use a public URL that returns the page or file itself. |
 
 ## 📄 License

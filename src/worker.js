@@ -7,8 +7,9 @@ const TURNSTILE_VERIFY = "https://challenges.cloudflare.com/turnstile/v0/sitever
 // Every conversion or segmentation counts as one document against both windows.
 const LIMITS = { perMinute: 5, perHour: 20 };
 
-// The AIVAX Fetch API caps each item at 50 MB, so the toy cannot accept more than that.
-const MAX_FILE_BYTES = 50 * 1024 * 1024;
+// The Fetch API accepts 50 MB per item, but Workers cut outbound fetches at ~125 s (HTTP 524) and large
+// scanned PDFs take longer than that. 10 MB keeps processing inside the window.
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_URL_CHARS = 2048;
 const MAX_MARKDOWN_CHARS = 400_000;
 
@@ -208,7 +209,7 @@ async function segment(request, env) {
 
 /**
  * Streams `{ contents: [dataUri], returnErrors: true }` with a known length. Building the base64 data URI
- * and its JSON as strings would hold several copies of a 50 MB file and exceed the Worker's 128 MB memory.
+ * and its JSON as strings would hold several copies of a large file and exceed the Worker's 128 MB memory.
  */
 function fileFetchBody(file, mediaType) {
   const encoder = new TextEncoder();
