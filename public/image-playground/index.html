@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image Playground: generate images with dozens of models — AIVAX Toys</title>
+  <meta name="description" content="Generate images with dozens of AI models, guide them with reference pictures, and keep the results in collections on your device. Sign in with AIVAX and pay only for the images you create.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23171713'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%238cc7f5'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://api.fontshare.com">
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&f[]=sentient@400&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.min.css">
+  <meta name="color-scheme" content="light dark">
+  <script>document.documentElement.dataset.theme = localStorage.getItem("toys.theme") ?? "system";</script>
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/components/controls.css">
+  <link rel="stylesheet" href="/styles/pages/image-playground.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="/">AIVAX <span>Toys</span></a>
+      <nav class="site-nav">
+        <a href="https://docs.aivax.net/docs/generations/images"><i class="ri-book-open-line"></i><span class="nav-label">Docs</span></a>
+        <a href="https://github.com/aivaxlabs/toys"><i class="ri-github-line"></i><span class="nav-label">Source</span></a>
+        <a class="nav-external" href="https://aivax.net"><i class="ri-external-link-line"></i><span class="nav-label">aivax.net</span></a>
+        <span class="theme-switch" role="group" aria-label="Theme">
+          <button type="button" value="system" title="System theme" aria-label="System theme"><i class="ri-computer-line"></i></button>
+          <button type="button" value="light" title="Light theme" aria-label="Light theme"><i class="ri-sun-line"></i></button>
+          <button type="button" value="dark" title="Dark theme" aria-label="Dark theme"><i class="ri-moon-line"></i></button>
+        </span>
+        <span class="account" id="account" hidden>
+          <i class="ri-user-3-line"></i>
+          <span class="nav-label" id="account-name"></span>
+          <button type="button" class="link-button" id="sign-out">Sign out</button>
+        </span>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="toy-hero">
+      <div class="container">
+        <a class="back" href="/"><i class="ri-arrow-left-line"></i> All toys</a>
+        <h1>Image Playground</h1>
+        <p class="lead">
+          Describe a picture and generate it with dozens of models. Guide them with reference images,
+          keep the results in collections, and see what each one cost.
+        </p>
+      </div>
+    </section>
+
+    <section class="tool">
+      <div class="container">
+        <div class="sign-in" id="sign-in" hidden>
+          <div>
+            <h2>Sign in to use this toy</h2>
+            <p class="muted">
+              It runs on your AIVAX account, and each image is charged to your balance at the model's
+              <a href="https://docs.aivax.net/docs/pricing">list price</a>. You choose how long access lasts and can revoke it in the console.
+            </p>
+          </div>
+          <button class="button" id="sign-in-button" type="button"><i class="ri-login-box-line"></i> Sign in with AIVAX</button>
+          <p class="muted small">No account? <a href="https://console.aivax.net/login">Create one for free</a>, then come back.</p>
+        </div>
+
+        <div class="collections-view" id="collections-view" hidden>
+          <div class="view-head">
+            <div>
+              <h2>Your collections</h2>
+              <p class="muted">Saved in this browser only. Clearing site data removes them.</p>
+            </div>
+            <button class="button" type="button" id="new-collection"><i class="ri-add-line"></i> New collection</button>
+          </div>
+          <div class="collections" id="collections"></div>
+        </div>
+
+        <div class="collection-view" id="collection-view" hidden>
+          <div class="collection-head">
+            <a class="back" href="#/"><i class="ri-arrow-left-line"></i> Collections</a>
+            <input class="collection-name" id="collection-name" maxlength="80" autocomplete="off" spellcheck="false" aria-label="Collection name">
+            <div class="collection-foot">
+              <p class="muted" id="collection-stats"></p>
+              <button type="button" class="link-button" id="delete-collection"><i class="ri-delete-bin-line"></i> Delete collection</button>
+            </div>
+          </div>
+
+          <form class="composer" id="composer" autocomplete="off">
+            <div class="references" id="references" hidden></div>
+
+            <textarea id="prompt" rows="3" maxlength="3900" placeholder="Describe an image. Paste or drop pictures to use them as references." aria-label="Prompt"></textarea>
+
+            <div class="link-row" id="link-row" hidden>
+              <i class="ri-link"></i>
+              <input type="text" id="link-input" inputmode="url" spellcheck="false" placeholder="https://example.com/picture.jpg" aria-label="Reference image link">
+              <button class="button secondary small" type="button" id="link-add">Add</button>
+            </div>
+
+            <div class="composer-bar">
+              <div class="composer-tools">
+                <button type="button" class="icon-button" id="attach-file" title="Upload reference images" aria-label="Upload reference images"><i class="ri-image-add-line"></i></button>
+                <button type="button" class="icon-button" id="attach-link" title="Add a reference image by link" aria-label="Add a reference image by link"><i class="ri-link"></i></button>
+                <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+
+                <label class="picker" title="Model">
+                  <i class="ri-sparkling-2-line"></i>
+                  <select id="model" aria-label="Model"><option>Loading models...</option></select>
+                </label>
+
+                <label class="picker" title="Style">
+                  <i class="ri-palette-line"></i>
+                  <select id="style" aria-label="Style"></select>
+                </label>
+
+                <div class="segmented" id="count" role="group" aria-label="Number of images">
+                  <button type="button" value="1" aria-pressed="true">1</button>
+                  <button type="button" value="2" aria-pressed="false">2</button>
+                  <button type="button" value="3" aria-pressed="false">3</button>
+                  <button type="button" value="4" aria-pressed="false">4</button>
+                </div>
+              </div>
+
+              <div class="composer-send">
+                <span class="estimate" id="estimate" title="Estimated from the model's list price. The exact charge shows up after generating."></span>
+                <button class="button" type="submit" id="generate"><i class="ri-magic-line"></i> Generate</button>
+              </div>
+            </div>
+
+            <p class="notice warning composer-note" id="composer-note" hidden></p>
+          </form>
+
+          <p class="billing muted"><i class="ri-bank-card-line"></i> Charged to your AIVAX account · <a href="https://console.aivax.net">see usage</a></p>
+
+          <div class="feed" id="feed"></div>
+          <p class="feed-empty muted" id="feed-empty" hidden>Nothing here yet. Your images show up here, newest first.</p>
+        </div>
+      </div>
+    </section>
+
+    <dialog class="viewer" id="viewer" aria-label="Image">
+      <div class="viewer-image"><img id="viewer-image" alt=""></div>
+      <div class="viewer-side">
+        <button type="button" class="icon-button viewer-close" id="viewer-close" title="Close" aria-label="Close"><i class="ri-close-line"></i></button>
+        <p class="viewer-prompt" id="viewer-prompt"></p>
+        <p class="muted small" id="viewer-meta"></p>
+        <div class="viewer-actions" id="viewer-actions"></div>
+      </div>
+    </dialog>
+
+    <div class="notice error toast" id="error" role="alert" hidden><i class="ri-error-warning-line"></i><span></span></div>
+
+    <section class="how-it-works">
+      <div class="container">
+        <h2>How it works</h2>
+        <div class="how-grid">
+          <div>
+            <i class="ri-magic-line"></i>
+            <h3>Generate</h3>
+            <p>
+              Your prompt goes to the model you pick, and AIVAX returns up to four images per request. Each model has its own price
+              per image, and failed images aren't charged. <a href="https://docs.aivax.net/docs/generations/images">Image generation</a>
+            </p>
+          </div>
+          <div>
+            <i class="ri-image-add-line"></i>
+            <h3>Guide</h3>
+            <p>
+              Models that accept references follow up to four pictures: a link, an upload, a pasted screenshot or an image you already made.
+              Styles add a short description to the end of your prompt.
+            </p>
+          </div>
+          <div>
+            <i class="ri-folder-image-line"></i>
+            <h3>Keep</h3>
+            <p>
+              Collections live in your browser's IndexedDB: only the image links, prompts and costs. The images themselves are
+              hosted by AIVAX at those links.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="dev">
+      <div class="container">
+        <details class="drawer" id="code">
+          <summary>
+            <span>
+              <i class="ri-code-s-slash-line"></i>
+              <strong>For developers</strong>
+              <span class="muted">API calls from this session, and the code to build it yourself</span>
+            </span>
+            <i class="ri-arrow-down-s-line chevron"></i>
+          </summary>
+
+          <div class="drawer-body">
+            <div class="dev-grid">
+              <div>
+                <h3>Calls made by this page</h3>
+                <div class="calls" id="calls"><span class="empty">Nothing yet. Generate an image to see the requests.</span></div>
+                <dl class="dev-stats">
+                  <div><dt>API calls</dt><dd id="m-calls">0</dd></div>
+                  <div><dt>Images generated</dt><dd id="m-images">0</dd></div>
+                  <div><dt>Charged this session</dt><dd id="m-cost">$0.00</dd></div>
+                </dl>
+                <p class="muted small">
+                  Costs come from the API response. Each call is billed to the AIVAX account you signed in with,
+                  through an application key limited to web fetch and generations.
+                </p>
+              </div>
+
+              <div class="code-section">
+                <h3>Build it yourself</h3>
+                <p class="muted small">
+                  One API call: <code>POST /api/v1/generations/images</code>. The models and their prices come from the public
+                  <code>GET /api/v1/information/image-models.json</code>. See the <a href="https://inference.aivax.net/apidocs">API reference</a> or the
+                  <a href="https://github.com/aivaxlabs/toys/blob/main/src/worker.js">Worker behind this page</a>.
+                </p>
+                <div class="tabs" role="tablist" id="code-tabs">
+                  <button role="tab" aria-selected="true" data-panel="curl">cURL</button>
+                  <button role="tab" aria-selected="false" data-panel="js">JavaScript</button>
+                  <button role="tab" aria-selected="false" data-panel="worker">Worker</button>
+                </div>
+        <div class="code-panel code-block" data-panel="curl">
+          <button class="copy" type="button">Copy</button>
+<pre class="code"><span class="c"># 1. Models, flags (AllowReferenceImage, Deprecated) and list prices. Public, no key needed.</span>
+curl https://inference.aivax.net/api/v1/information/image-models.json
+
+<span class="c"># 2. Generate. `count` is 1 to 4 images per prompt. `referenceImages` takes up to four
+#    http(s) links or data:image/...;base64 URIs, on models flagged AllowReferenceImage.</span>
+curl https://direct.inference.aivax.net/api/v1/generations/images \
+  -H <span class="s">"Authorization: Bearer $AIVAX_API_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{
+    "input": "A lighthouse during a winter storm\n\nStyle: anime illustration, cel shading",
+    "model": "@black-forest-labs/flux-3-image-klein",
+    "count": 2,
+    "referenceImages": ["https://example.com/lighthouse.jpg"]
+  }'</span>
+
+<span class="c"># → { "data": [ {
+#       "input": "A lighthouse during a winter storm...",
+#       "images": ["https://.../image-1.webp"],
+#       "outputs": [
+#         { "url": "https://.../image-1.webp", "cost": 0.019, "error": null },
+#         { "url": null, "cost": 0, "error": "The image could not be generated." }   ← not charged
+#       ],
+#       "cost": 0.019 } ] }</span></pre>
+        </div>
+
+        <div class="code-panel code-block" data-panel="js" hidden>
+          <button class="copy" type="button">Copy</button>
+<pre class="code"><span class="c">// Works in Node 18+, Bun, Deno and browsers. Keep the API key server-side.</span>
+<span class="k">const</span> AIVAX = <span class="s">"https://direct.inference.aivax.net/api/v1"</span>;
+
+<span class="c">// Skip deprecated models, and note which ones accept reference images.</span>
+<span class="k">async function</span> listModels() {
+  <span class="k">const</span> response = <span class="k">await</span> fetch(<span class="s">"https://inference.aivax.net/api/v1/information/image-models.json"</span>);
+  <span class="k">const</span> { data } = <span class="k">await</span> response.json();
+
+  <span class="k">return</span> data
+    .filter((model) =&gt; !model.flags.includes(<span class="s">"Deprecated"</span>))
+    .map((model) =&gt; ({
+      name: model.name,
+      label: model.displayName,
+      price: model.pricingDescription,
+      acceptsReferences: model.flags.includes(<span class="s">"AllowReferenceImage"</span>),
+    }));
+}
+
+<span class="k">async function</span> generateImages({ prompt, model, count = <span class="k">1</span>, references = [] }) {
+  <span class="k">const</span> response = <span class="k">await</span> fetch(<span class="s">`${AIVAX}/generations/images`</span>, {
+    method: <span class="s">"POST"</span>,
+    headers: {
+      authorization: <span class="s">`Bearer ${process.env.AIVAX_API_KEY}`</span>,
+      <span class="s">"content-type"</span>: <span class="s">"application/json"</span>,
+    },
+    body: JSON.stringify({
+      input: prompt,
+      model,
+      count,
+      ...(references.length &amp;&amp; { referenceImages: references }),
+    }),
+  });
+
+  <span class="k">const</span> payload = <span class="k">await</span> response.json();
+  <span class="k">if</span> (!response.ok) <span class="k">throw new</span> Error(payload.error);
+
+  <span class="k">const</span> [group] = payload.data;       <span class="c">// one group per prompt in `input`</span>
+  <span class="k">return</span> { outputs: group.outputs, cost: group.cost };
+}
+
+<span class="k">const</span> { outputs, cost } = <span class="k">await</span> generateImages({
+  prompt: <span class="s">"A cozy reading nook with a sleeping cat"</span>,
+  model: <span class="s">"@black-forest-labs/flux-3-image-klein"</span>,
+  count: <span class="k">2</span>,
+});
+
+<span class="k">for</span> (<span class="k">const</span> output <span class="k">of</span> outputs) console.log(output.url ?? <span class="s">`failed: ${output.error}`</span>);
+console.log(<span class="s">`Charged $${cost}`</span>);</pre>
+        </div>
+
+        <div class="code-panel code-block" data-panel="worker" hidden>
+          <button class="copy" type="button">Copy</button>
+<pre class="code"><span class="c">// Trimmed from src/worker.js in the repository. The real file adds the AIVAX OAuth
+// sign-in that stores each visitor's application key in an HttpOnly cookie.</span>
+<span class="k">const</span> AIVAX_API = <span class="s">"https://direct.inference.aivax.net/api/v1"</span>;
+
+<span class="k">export default</span> {
+  <span class="k">async</span> fetch(request, env) {
+    <span class="k">const</span> url = <span class="k">new</span> URL(request.url);
+
+    <span class="k">if</span> (url.pathname === <span class="s">"/api/images/generate"</span> &amp;&amp; request.method === <span class="s">"POST"</span>) {
+      <span class="k">const</span> { prompt, model, count, references } = <span class="k">await</span> request.json();
+
+      <span class="k">const</span> response = <span class="k">await</span> fetch(<span class="s">`${AIVAX_API}/generations/images`</span>, {
+        method: <span class="s">"POST"</span>,
+        headers: {
+          authorization: <span class="s">`Bearer ${env.AIVAX_API_KEY}`</span>,
+          <span class="s">"content-type"</span>: <span class="s">"application/json"</span>,
+        },
+        body: JSON.stringify({ input: prompt, model, count, referenceImages: references }),
+      });
+
+      <span class="k">const</span> payload = <span class="k">await</span> response.json();
+      <span class="k">if</span> (!response.ok) <span class="k">return</span> Response.json({ error: payload.error }, { status: response.status });
+
+      <span class="k">const</span> [group] = payload.data;
+      <span class="k">return</span> Response.json({ outputs: group.outputs, cost: group.cost });
+    }
+
+    <span class="k">return</span> env.ASSETS.fetch(request);
+  },
+};</pre>
+        </div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>AIVAX Toys is maintained by <a href="https://aivax.net">AIVAX</a>. Usage is billed to the AIVAX account you sign in with.</span>
+      <span><a href="https://github.com/aivaxlabs/toys">github.com/aivaxlabs/toys</a> · <a href="https://docs.aivax.net/docs/pricing">Pricing</a> · <a href="https://docs.aivax.net/docs/limits">Limits</a></span>
+    </div>
+  </footer>
+
+  <script type="module" src="/scripts/site.js"></script>
+  <script type="module" src="/scripts/image-playground.js"></script>
+</body>
+</html>

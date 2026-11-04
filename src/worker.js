@@ -12,7 +12,7 @@ const STATE_COOKIE = "toys_oauth_state";
 // address, and requests sent from the Worker would all share the Worker's address.
 const OAUTH_REQUEST = {
   clientName: "AIVAX Toys",
-  reason: "Run the toys on toys.aivax.net: read links, images and PDFs as text, and split text into chunks. Usage is charged to this account.",
+  reason: "Run the toys on toys.aivax.net: read links, images and PDFs as text, split text into chunks, and generate images. Usage is charged to this account.",
   permissions: ["WebUtilities", "InferenceGenerations"],
 };
 
@@ -21,6 +21,21 @@ const OAUTH_REQUEST = {
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_URL_CHARS = 2048;
 const MAX_MARKDOWN_CHARS = 400_000;
+
+const MAX_PROMPT_CHARS = 4000;
+const MAX_REFERENCES = 4;
+
+// The page shrinks uploads to about 1.5 MB before encoding them; this leaves room without letting
+// four references push the request past what the API accepts (8 MB decoded each).
+const MAX_DATA_REFERENCE_CHARS = 6 * 1024 * 1024;
+const DATA_REFERENCE = /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+=*$/;
+
+// Generated images are public objects on Backblaze B2, which sends no CORS headers, so the page
+// downloads and copies them through this Worker. Only AIVAX's bucket and storage path are proxied, so other
+// buckets can't serve content (such as scripted SVG) from this origin.
+const GENERATED_IMAGE_HOST = "aivax-objects.s3.us-west-002.backblazeb2.com";
+const GENERATED_IMAGE_TYPE = /^image\/(png|jpeg|webp|gif)$/;
+const GENERATED_IMAGE_PATH = "/PublicObjects/ImageGeneration/";
 
 // File types the Fetch API reads, keyed by extension for uploads that arrive without a MIME type.
 const MEDIA_TYPES = {
@@ -53,6 +68,8 @@ export default {
       if (url.pathname === "/api/auth/logout" && request.method === "POST") return signOut(url);
       if (url.pathname === "/api/convert" && request.method === "POST") return await convert(request, url);
       if (url.pathname === "/api/segment" && request.method === "POST") return await segment(request, url);
+      if (url.pathname === "/api/images/generate" && request.method === "POST") return await generateImages(request, url);
+      if (url.pathname === "/api/images/file" && request.method === "GET") return await imageFile(request, url);
     } catch (error) {
       console.error(error);
       return fail("Unexpected error. Please try again.", 500);
@@ -244,6 +261,93 @@ async function segment(request, url) {
     cost: call.data.usage?.cost ?? 0,
     elapsedMs: call.elapsedMs,
     requestId: call.requestId,
+  });
+}
+
+async function generateImages(request, url) {
+  const token = readCookie(request, SESSION_COOKIE);
+  if (!token) return fail("Sign in with AIVAX to use this toy.", 401);
+
+  const body = await request.json().catch(() => null);
+  const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
+  const model = body?.model;
+  const count = body?.count ?? 1;
+  const references = body?.references ?? [];
+
+  if (!prompt) return fail("Write a prompt in the `prompt` field.", 400);
+  if (prompt.length > MAX_PROMPT_CHARS) return fail(`The prompt exceeds ${MAX_PROMPT_CHARS.toLocaleString("en-US")} characters.`, 413);
+  if (typeof model !== "string" || !/^@[\w.-]{1,64}\/[\w.-]{1,96}$/.test(model)) return fail("Pick a model in the `model` field, like @black-forest-labs/flux-3-image-klein.", 400);
+  if (!Number.isInteger(count) || count < 1 || count > 4) return fail("`count` must be a whole number from 1 to 4.", 400);
+  if (!Array.isArray(references) || references.length > MAX_REFERENCES) return fail(`Send up to ${MAX_REFERENCES} reference images in \`references\`.`, 400);
+
+  for (const reference of references) {
+    if (typeof reference !== "string") return fail("Each reference must be a link or an image data URI.", 400);
+
+    if (reference.startsWith("data:")) {
+      if (reference.length > MAX_DATA_REFERENCE_CHARS) return fail("A reference image is too large. Use one under 4 MB.", 413);
+      if (!DATA_REFERENCE.test(reference)) return fail("Reference images must be PNG, JPEG, WebP or GIF.", 400);
+      continue;
+    }
+
+    let link;
+    try {
+      link = new URL(reference);
+    } catch {
+      return fail("A reference link doesn't look right. Use a full address like https://example.com/picture.jpg.", 400);
+    }
+
+    if (link.protocol !== "http:" && link.protocol !== "https:") return fail("Reference links must start with http:// or https://.", 400);
+    if (link.href.length > MAX_URL_CHARS) return fail(`A reference link exceeds ${MAX_URL_CHARS} characters.`, 413);
+  }
+
+  const call = await callAivax(token, "/generations/images", JSON.stringify({
+    input: prompt,
+    model,
+    count,
+    ...(references.length && { referenceImages: references }),
+  }));
+
+  const group = call.data?.[0];
+
+  // AIVAX answers 400 for requests it can't run, such as references on a model that doesn't take them.
+  if (call.status === 400) return fail(call.message ?? "AIVAX rejected this request.", 422);
+  if (!call.ok || !group) return upstreamError(call, url, "AIVAX could not generate images.");
+
+  return json({
+    outputs: group.outputs,
+    cost: group.cost,
+    elapsedMs: call.elapsedMs,
+    requestId: call.requestId,
+  });
+}
+
+async function imageFile(request, url) {
+  if (!readCookie(request, SESSION_COOKIE)) return fail("Sign in with AIVAX to use this toy.", 401);
+
+  let source;
+  try {
+    source = new URL(url.searchParams.get("url") ?? "");
+  } catch {
+    return fail("Send the image link in the `url` parameter.", 400);
+  }
+
+  if (source.protocol !== "https:" || source.hostname !== GENERATED_IMAGE_HOST || !source.pathname.startsWith(GENERATED_IMAGE_PATH)) {
+    return fail("Only images generated by AIVAX can be downloaded here.", 400);
+  }
+
+  const response = await fetch(source.href, { redirect: "manual" });
+  const type = response.headers.get("content-type")?.split(";")[0].trim().toLowerCase() ?? "";
+
+  if (response.status === 404) return fail("This image is no longer available.", 404);
+  if (response.status !== 200 || !GENERATED_IMAGE_TYPE.test(type)) return fail("Could not load this image. Try again.", 502);
+
+  return new Response(response.body, {
+    headers: {
+      "content-type": type,
+      "content-disposition": "attachment",
+      "cache-control": "private, max-age=3600",
+      "x-content-type-options": "nosniff",
+    },
   });
 }
 

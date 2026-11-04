@@ -162,6 +162,91 @@
   to { stroke-dashoffset: -14; }
 }
 
+/*
+ * Image Playground art: the prompt types itself and is sent, then four frames develop in turn
+ * from blank to a picture. Each frame starts --step after the previous one.
+ */
+
+.art-playground {
+  --cycle: 6s;
+  --step: 0.35s;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.art-playground .prompt rect {
+  fill: var(--page-raised);
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+
+.art-playground .typed {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2.4;
+  stroke-dasharray: 112;
+  animation: playground-type var(--cycle) var(--ease) infinite;
+}
+
+.art-playground .send {
+  fill: var(--ink);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: playground-send var(--cycle) var(--ease) infinite;
+}
+
+.art-playground .send-arrow {
+  fill: none;
+  stroke: var(--white);
+  stroke-width: 1.4;
+}
+
+.art-playground .frame rect {
+  fill: var(--page-raised);
+  stroke: var(--line-strong);
+  stroke-width: 1.4;
+  animation: playground-frame var(--cycle) var(--ease) infinite;
+}
+
+.art-playground .frame :not(rect) {
+  fill: none;
+  stroke: var(--blue-strong);
+  stroke-width: 1.6;
+  opacity: 0;
+  animation: playground-develop var(--cycle) var(--ease) infinite;
+}
+
+.art-playground .frame-2 * { animation-delay: var(--step); }
+.art-playground .frame-3 * { animation-delay: calc(var(--step) * 2); }
+.art-playground .frame-4 * { animation-delay: calc(var(--step) * 3); }
+
+.toy-card:hover .art-playground .send {
+  fill: var(--blue-strong);
+}
+
+@keyframes playground-type {
+  0%, 4% { stroke-dashoffset: 112; }
+  26%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes playground-send {
+  0%, 28% { transform: scale(1); }
+  31% { transform: scale(0.8); }
+  35%, 100% { transform: scale(1); }
+}
+
+@keyframes playground-frame {
+  0%, 34% { fill: var(--page-raised); stroke: var(--line-strong); }
+  44%, 88% { fill: var(--blue-soft); stroke: var(--blue-strong); }
+  96%, 100% { fill: var(--page-raised); stroke: var(--line-strong); }
+}
+
+@keyframes playground-develop {
+  0%, 38% { opacity: 0; }
+  50%, 88% { opacity: 1; }
+  96%, 100% { opacity: 0; }
+}
+
 .art-soon path,
 .art-soon circle {
   fill: none;
@@ -204,8 +289,13 @@
 
 @media (prefers-reduced-motion: reduce) {
   .art-media *,
+  .art-playground *,
   .art-soon * {
     animation: none !important;
+  }
+
+  .art-playground .frame :not(rect) {
+    opacity: 1;
   }
 
   .art-media .md path {
