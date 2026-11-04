@@ -1119,6 +1119,11 @@ button.picker {
   color: var(--white);
 }
 
+.segmented button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .estimate {
   color: var(--muted);
   font-size: 0.8125rem;

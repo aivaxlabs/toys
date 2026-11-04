@@ -35,8 +35,10 @@ const STYLES = {
 };
 
 // Resolution sets the long side; sides are kept to multiples of 64 within the API's 64-4096 range.
-const RESOLUTIONS = { "1K": 1024, "2K": 2048, "4K": 4096 };
-const ASPECTS = ["1:1", "4:3", "3:2", "16:9", "3:4", "2:3", "9:16"];
+// "Auto" sends no `size` and, for the aspect ratio, nothing in the prompt either.
+const AUTO = "Auto";
+const RESOLUTIONS = { [AUTO]: null, "1K": 1024, "2K": 2048, "4K": 4096 };
+const ASPECTS = [AUTO, "1:1", "4:3", "3:2", "16:9", "3:4", "2:3", "9:16"];
 
 const $ = (id) => document.getElementById(id);
 
@@ -107,7 +109,7 @@ const state = {
   references: [],
   count: Number(localStorage.getItem("playground.count")) || 1,
   aspect: ASPECTS.includes(localStorage.getItem("playground.aspect")) ? localStorage.getItem("playground.aspect") : "1:1",
-  resolution: RESOLUTIONS[localStorage.getItem("playground.resolution")] ? localStorage.getItem("playground.resolution") : "1K",
+  resolution: localStorage.getItem("playground.resolution") in RESOLUTIONS ? localStorage.getItem("playground.resolution") : "1K",
   busy: false,
   calls: [],
 };
@@ -116,6 +118,7 @@ const money = (value) => `$${value.toFixed(value > 0 && value < 0.01 ? 4 : 2)}`;
 const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
 const modelOf = (name) => state.models.find((model) => model.name === name);
 const ratioOf = (aspect) => aspect.split(":").map(Number);
+const sizeText = (aspect, resolution) => aspect === AUTO ? "Auto size" : `${aspect} · ${resolution}`;
 const slug = (text) => text.slice(0, 48).replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase();
 
 const providerIcon = (model) => PROVIDERS[model.provider]
@@ -123,6 +126,8 @@ const providerIcon = (model) => PROVIDERS[model.provider]
   : el("span", { className: "provider-icon is-letter", textContent: model.vendor[0], ariaHidden: "true" });
 
 function sizeOf(aspect, resolution) {
+  if (aspect === AUTO || !RESOLUTIONS[resolution]) return null;
+
   const [width, height] = ratioOf(aspect);
   const long = RESOLUTIONS[resolution];
   const short = Math.round((long * Math.min(width, height)) / Math.max(width, height) / 64) * 64;
@@ -441,10 +446,17 @@ function renderComposer() {
   }
 
   const size = sizeOf(state.aspect, state.resolution);
-  ui.sizeLabel.textContent = `${state.aspect} · ${state.resolution}`;
-  ui.sizePixels.textContent = `${size.width} × ${size.height} px. Models that can't follow the size get the aspect ratio in the prompt.`;
+  ui.sizeLabel.textContent = sizeText(state.aspect, state.resolution);
+  ui.sizePixels.textContent = size
+    ? `${size.width} × ${size.height} px. Models that can't follow the size get the aspect ratio in the prompt.`
+    : state.aspect === AUTO
+      ? "No size or aspect ratio is sent, so the model uses its default."
+      : "No size is sent. The aspect ratio goes in the prompt and the model picks the resolution.";
   ui.aspect.querySelectorAll("button").forEach((button) => button.setAttribute("aria-pressed", String(button.value === state.aspect)));
-  ui.resolution.querySelectorAll("button").forEach((button) => button.setAttribute("aria-pressed", String(button.value === state.resolution)));
+  ui.resolution.querySelectorAll("button").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.value === state.resolution));
+    button.disabled = state.aspect === AUTO;
+  });
 
   if (model?.outputPrice != null) {
     const each = model.outputPrice + (model.references ? state.references.length * model.referencePrice : 0);
@@ -754,7 +766,7 @@ function renderFeed() {
     const details = [
       model?.label ?? generation.model,
       generation.style !== "auto" ? STYLES[generation.style]?.label : null,
-      generation.aspect ? `${generation.aspect} · ${generation.resolution}` : null,
+      generation.aspect ? sizeText(generation.aspect, generation.resolution) : null,
       generation.references ? plural(generation.references, "reference") : null,
       generation.pending ? "generating..." : money(generation.cost),
       new Date(generation.createdAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }),
@@ -764,7 +776,7 @@ function renderFeed() {
       el("header", {},
         el("p", { className: "generation-prompt", textContent: generation.prompt }),
         el("p", { className: "generation-meta muted" }, ...details.map((detail) => el("span", { textContent: detail })))),
-      el("div", { className: "tiles", style: generation.aspect ? `--tile-ratio: ${ratioOf(generation.aspect).join(" / ")}` : "" }, ...(generation.pending
+      el("div", { className: "tiles", style: generation.aspect && generation.aspect !== AUTO ? `--tile-ratio: ${ratioOf(generation.aspect).join(" / ")}` : "" }, ...(generation.pending
         ? Array.from({ length: generation.count }, () => el("div", { className: "tile skeleton" }))
         : generation.outputs.map((output) => output.url
           ? el("button", { type: "button", className: "tile", onclick: () => openViewer(generation, output) },
@@ -794,13 +806,14 @@ ui.composer.addEventListener("submit", async (event) => {
   const references = [...state.references];
   const { aspect, resolution } = state;
   const size = sizeOf(aspect, resolution);
-  const shape = size.width === size.height ? "square" : size.width > size.height ? "landscape" : "portrait";
+  const [width, height] = aspect === AUTO ? [] : ratioOf(aspect);
+  const shape = width === height ? "square" : width > height ? "landscape" : "portrait";
 
   // Not every model follows `size`, so the prompt also names the aspect ratio.
   const input = [
     prompt,
     STYLES[style].suffix && `Style: ${STYLES[style].suffix}`,
-    `Aspect ratio: ${aspect} (${shape}).`,
+    aspect !== AUTO && `Aspect ratio: ${aspect} (${shape}).`,
   ].filter(Boolean).join("\n\n");
 
   const collectionId = state.collection.id;
@@ -835,7 +848,7 @@ ui.composer.addEventListener("submit", async (event) => {
     const response = await fetch("/api/images/generate", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: input, model, count: state.count, size: `${size.width}x${size.height}`, references }),
+      body: JSON.stringify({ prompt: input, model, count: state.count, size: size && `${size.width}x${size.height}`, references }),
     });
     const payload = await response.json().catch(() => ({}));
 
@@ -926,7 +939,7 @@ function openViewer(generation, output) {
   const details = [
     ["Model", el("span", { className: "viewer-model" }, model ? providerIcon(model) : null, model?.label ?? generation.model)],
     ["Style", STYLES[generation.style]?.label],
-    ["Size", generation.aspect && `${generation.aspect} · ${generation.resolution}`],
+    ["Size", generation.aspect && sizeText(generation.aspect, generation.resolution)],
     ["Cost", money(output.cost)],
     ["Created", new Date(generation.createdAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })],
   ].filter(([, value]) => value);
