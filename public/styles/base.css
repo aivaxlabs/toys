@@ -116,6 +116,13 @@ kbd {
   display: none !important;
 }
 
+/* Selects with a transparent background open a white native list, so options carry the theme colors. */
+option,
+optgroup {
+  background: var(--page-raised);
+  color: var(--ink);
+}
+
 .container {
   width: min(100% - 2.5rem, var(--container));
   margin-inline: auto;
