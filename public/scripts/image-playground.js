@@ -6,14 +6,37 @@ const REFERENCE_MAX_SIDE = 1536;
 const REFERENCE_MAX_FILE_BYTES = 20 * 1024 * 1024;
 const DEFAULT_MODEL = "@black-forest-labs/flux-3-image-klein";
 
-// The API has no style field, so a style becomes a short description at the end of the prompt.
-const STYLES = {
-  auto: { label: "Auto", suffix: null },
-  realism: { label: "Realism", suffix: "photorealistic photograph, natural lighting, realistic textures, sharp detail" },
-  anime: { label: "Anime", suffix: "anime illustration, cel shading, clean line art, vibrant colors" },
-  "vintage-cartoon": { label: "Vintage Cartoon", suffix: "1930s rubber hose cartoon, hand-inked lines, grainy film, muted vintage colors" },
-  "cute-3d": { label: "Cute 3D", suffix: "cute 3D render, soft rounded shapes, pastel colors, studio lighting, toy-like" },
+// Sample images are the ones the AIVAX console and model catalog show for each model.
+const MODEL_PREVIEWS = "https://console.aivax.net/assets/imggenmodels/";
+
+// Catalog display names aren't consistent ("xAI", "SpaceXAI", or none), so providers are named from the model id.
+const PROVIDERS = {
+  alibaba: "Alibaba",
+  "black-forest-labs": "Black Forest Labs",
+  bytedance: "ByteDance",
+  google: "Google",
+  ideogram: "Ideogram",
+  krea: "Krea",
+  microsoft: "Microsoft",
+  openai: "OpenAI",
+  qwen: "Qwen",
+  recraft: "Recraft",
+  "x-ai": "xAI",
 };
+
+// The API has no style field, so a style becomes a short description at the end of the prompt.
+// Previews in /images/styles/ share one prompt so the styles can be compared side by side.
+const STYLES = {
+  auto: { label: "Auto", hint: "Your prompt as written", suffix: null },
+  realism: { label: "Realism", hint: "Photographic", suffix: "photorealistic photograph, natural lighting, realistic textures, sharp detail" },
+  anime: { label: "Anime", hint: "Cel-shaded illustration", suffix: "anime illustration, cel shading, clean line art, vibrant colors" },
+  "vintage-cartoon": { label: "Vintage Cartoon", hint: "1930s ink and film", suffix: "1930s rubber hose cartoon, hand-inked lines, grainy film, muted vintage colors" },
+  "cute-3d": { label: "Cute 3D", hint: "Soft toy-like render", suffix: "cute 3D render, soft rounded shapes, pastel colors, studio lighting, toy-like" },
+};
+
+// Resolution sets the long side; sides are kept to multiples of 64 within the API's 64-4096 range.
+const RESOLUTIONS = { "1K": 1024, "2K": 2048, "4K": 4096 };
+const ASPECTS = ["1:1", "4:3", "3:2", "16:9", "3:4", "2:3", "9:16"];
 
 const $ = (id) => document.getElementById(id);
 
@@ -40,8 +63,22 @@ const ui = {
   attachFile: $("attach-file"),
   attachLink: $("attach-link"),
   fileInput: $("file-input"),
-  model: $("model"),
-  style: $("style"),
+  modelButton: $("model-button"),
+  modelIcon: $("model-icon"),
+  modelLabel: $("model-label"),
+  modelMenu: $("model-menu"),
+  modelSearch: $("model-search"),
+  modelList: $("model-list"),
+  styleButton: $("style-button"),
+  styleLabel: $("style-label"),
+  styleMenu: $("style-menu"),
+  styleOptions: $("style-options"),
+  sizeButton: $("size-button"),
+  sizeLabel: $("size-label"),
+  sizeMenu: $("size-menu"),
+  sizePixels: $("size-pixels"),
+  aspect: $("aspect"),
+  resolution: $("resolution"),
   count: $("count"),
   estimate: $("estimate"),
   generate: $("generate"),
@@ -52,7 +89,7 @@ const ui = {
   viewerImage: $("viewer-image"),
   viewerClose: $("viewer-close"),
   viewerPrompt: $("viewer-prompt"),
-  viewerMeta: $("viewer-meta"),
+  viewerDetails: $("viewer-details"),
   viewerActions: $("viewer-actions"),
   calls: $("calls"),
   mCalls: $("m-calls"),
@@ -63,10 +100,14 @@ const ui = {
 const state = {
   account: null,
   models: [],
+  model: null,
+  style: STYLES[localStorage.getItem("playground.style")] ? localStorage.getItem("playground.style") : "auto",
   collection: null,
   generations: [],
   references: [],
   count: Number(localStorage.getItem("playground.count")) || 1,
+  aspect: ASPECTS.includes(localStorage.getItem("playground.aspect")) ? localStorage.getItem("playground.aspect") : "1:1",
+  resolution: RESOLUTIONS[localStorage.getItem("playground.resolution")] ? localStorage.getItem("playground.resolution") : "1K",
   busy: false,
   calls: [],
 };
@@ -74,6 +115,20 @@ const state = {
 const money = (value) => `$${value.toFixed(value > 0 && value < 0.01 ? 4 : 2)}`;
 const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
 const modelOf = (name) => state.models.find((model) => model.name === name);
+const ratioOf = (aspect) => aspect.split(":").map(Number);
+const slug = (text) => text.slice(0, 48).replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase();
+
+const providerIcon = (model) => PROVIDERS[model.provider]
+  ? el("span", { className: "provider-icon", style: `--icon: url("/images/providers/${model.provider}.svg")`, role: "img", ariaLabel: model.vendor })
+  : el("span", { className: "provider-icon is-letter", textContent: model.vendor[0], ariaHidden: "true" });
+
+function sizeOf(aspect, resolution) {
+  const [width, height] = ratioOf(aspect);
+  const long = RESOLUTIONS[resolution];
+  const short = Math.round((long * Math.min(width, height)) / Math.max(width, height) / 64) * 64;
+
+  return width >= height ? { width: long, height: short } : { width: short, height: long };
+}
 
 function el(tag, props = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
@@ -217,6 +272,7 @@ async function route() {
 
   ui.collectionsView.hidden = true;
   ui.collectionView.hidden = true;
+  document.body.classList.remove("is-focused");
   if (!state.account) return;
 
   const collection = id && await store("collections", "readonly", (collections) => collections.get(id));
@@ -253,16 +309,45 @@ async function renderCollections() {
 
   const cards = await Promise.all(collections.map(async (collection) => {
     const generations = await generationsOf(collection.id);
-    const covers = imagesOf(generations).slice(0, 4);
+    const images = imagesOf(generations);
+    const covers = images.slice(0, 4);
 
-    return el("a", { className: "collection-card", href: `#/c/${collection.id}` },
-      el("div", { className: `covers covers-${covers.length}` },
-        ...(covers.length
-          ? covers.map((cover) => el("img", { src: cover.url, alt: "", loading: "lazy", onerror: (event) => event.target.classList.add("is-broken") }))
-          : [el("i", { className: "ri-image-2-line" })])),
-      el("div", { className: "collection-meta" },
-        el("strong", { textContent: collection.name }),
-        el("span", { className: "muted", textContent: `${plural(imagesOf(generations).length, "image")} · ${money(costOf(generations))}` })));
+    const menuButton = el("button", { type: "button", className: "icon-button", title: "Collection actions", ariaLabel: `Actions for ${collection.name}`, ariaHasPopup: "menu", ariaExpanded: "false", innerHTML: '<i class="ri-more-fill"></i>' });
+    const menu = el("div", { className: "popover collection-menu", role: "menu", hidden: true });
+
+    const zip = el("button", { type: "button", className: "menu-item", role: "menuitem", disabled: !images.length, innerHTML: '<i class="ri-folder-zip-line"></i> Download ZIP' });
+    zip.addEventListener("click", async () => {
+      zip.disabled = true;
+      try {
+        await downloadCollection(collection, generations, (done) => (zip.lastChild.textContent = ` Zipping ${done}/${images.length}...`));
+        togglePopover(menu, false);
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        zip.lastChild.textContent = " Download ZIP";
+        zip.disabled = false;
+      }
+    });
+
+    const remove = el("button", { type: "button", className: "menu-item danger", role: "menuitem", innerHTML: '<i class="ri-delete-bin-line"></i> Delete' });
+    remove.addEventListener("click", async () => {
+      togglePopover(menu, false);
+      if (await deleteCollection(collection, generations)) renderCollections();
+    });
+
+    menu.append(zip, remove);
+    menuButton.addEventListener("click", () => togglePopover(menu, menu.hidden));
+
+    return el("div", { className: "collection" },
+      el("a", { className: "collection-card", href: `#/c/${collection.id}` },
+        el("div", { className: `covers covers-${covers.length}` },
+          ...(covers.length
+            ? covers.map((cover) => el("img", { src: cover.url, alt: "", loading: "lazy", onerror: (event) => event.target.classList.add("is-broken") }))
+            : [el("i", { className: "ri-image-2-line" })])),
+        el("div", { className: "collection-meta" },
+          el("strong", { textContent: collection.name }),
+          el("span", { className: "muted", textContent: `${plural(images.length, "image")} · ${money(costOf(generations))}` }))),
+      el("div", { className: "popover-anchor collection-actions" }, menuButton, menu));
   }));
 
   ui.collections.replaceChildren(
@@ -292,28 +377,74 @@ ui.collectionName.addEventListener("keydown", (event) => {
   if (event.key === "Enter") ui.prompt.focus();
 });
 
-ui.deleteCollection.addEventListener("click", async () => {
-  const images = imagesOf(state.generations).length;
-  if (!confirm(`Delete "${state.collection.name}" and its ${plural(images, "image")} from this browser? This can't be undone.`)) return;
+async function deleteCollection(collection, generations) {
+  const images = imagesOf(generations).length;
+  if (!confirm(`Delete "${collection.name}" and its ${plural(images, "image")} from this browser? This can't be undone.`)) return false;
 
-  const id = state.collection.id;
-  await store("generations", "readwrite", (generations) => state.generations.forEach((generation) => generations.delete(generation.id)));
-  await store("collections", "readwrite", (collections) => collections.delete(id));
-  location.hash = "#/";
+  await store("generations", "readwrite", (records) => generations.forEach((generation) => records.delete(generation.id)));
+  await store("collections", "readwrite", (collections) => collections.delete(collection.id));
+  return true;
+}
+
+ui.deleteCollection.addEventListener("click", async () => {
+  if (await deleteCollection(state.collection, state.generations)) location.hash = "#/";
 });
+
+// Images are fetched through the Worker and stored as-is; they're already compressed.
+// Links that no longer load are left out of the ZIP and reported.
+async function downloadCollection(collection, generations, onProgress) {
+  const items = generations.toReversed().flatMap((generation) =>
+    generation.outputs.filter((output) => output.url).map((output) => ({ generation, output })));
+  let done = 0;
+
+  const [{ zipSync }, ...blobs] = await Promise.all([
+    import("https://cdn.jsdelivr.net/npm/fflate@0.8.3/esm/browser.js"),
+    ...items.map(({ output }) => fetchImage(output.url)
+      .then((blob) => blob.arrayBuffer().then((buffer) => ({ type: blob.type, bytes: new Uint8Array(buffer) })))
+      .catch(() => null)
+      .finally(() => onProgress(++done))),
+  ]);
+
+  const files = {};
+  items.forEach(({ generation }, index) => {
+    const blob = blobs[index];
+    if (blob) files[`${String(index + 1).padStart(3, "0")}-${slug(generation.prompt) || "image"}.${blob.type.split("/")[1] || "png"}`] = blob.bytes;
+  });
+
+  const missing = items.length - Object.keys(files).length;
+  if (missing === items.length) throw new Error("None of the images in this collection could be loaded.");
+
+  saveBlob(new Blob([zipSync(files, { level: 0 })], { type: "application/zip" }), `${slug(collection.name) || "collection"}.zip`);
+  if (missing) showError(`${plural(missing, "image")} could not be loaded and ${missing === 1 ? "was" : "were"} left out of the ZIP.`);
+}
 
 // ---------------------------------------------------------------------------
 // Models and composer settings
 // ---------------------------------------------------------------------------
 
 function renderComposer() {
-  const model = modelOf(ui.model.value);
+  const model = modelOf(state.model);
   const unsupported = state.references.length > 0 && model && !model.references;
 
   ui.composerNote.hidden = !unsupported;
   ui.composerNote.textContent = unsupported ? `${model.label} doesn't take reference images. Remove them or pick another model.` : "";
 
   ui.count.querySelectorAll("button").forEach((button) => button.setAttribute("aria-pressed", String(Number(button.value) === state.count)));
+
+  ui.styleLabel.textContent = STYLES[state.style].label;
+  ui.styleOptions.querySelectorAll(".style-option").forEach((option) => option.setAttribute("aria-selected", String(option.value === state.style)));
+
+  if (model) {
+    ui.modelIcon.replaceChildren(providerIcon(model));
+    ui.modelLabel.textContent = model.label;
+    ui.modelButton.title = `${model.vendor}: ${model.label}`;
+  }
+
+  const size = sizeOf(state.aspect, state.resolution);
+  ui.sizeLabel.textContent = `${state.aspect} · ${state.resolution}`;
+  ui.sizePixels.textContent = `${size.width} × ${size.height} px. Models that can't follow the size get the aspect ratio in the prompt.`;
+  ui.aspect.querySelectorAll("button").forEach((button) => button.setAttribute("aria-pressed", String(button.value === state.aspect)));
+  ui.resolution.querySelectorAll("button").forEach((button) => button.setAttribute("aria-pressed", String(button.value === state.resolution)));
 
   if (model?.outputPrice != null) {
     const each = model.outputPrice + (model.references ? state.references.length * model.referencePrice : 0);
@@ -326,20 +457,124 @@ function renderComposer() {
   ui.generate.innerHTML = state.busy ? '<span class="spinner"></span> Generating' : '<i class="ri-magic-line"></i> Generate';
 }
 
-ui.style.append(...Object.entries(STYLES).map(([value, style]) => el("option", { value, textContent: style.label })));
-ui.style.value = STYLES[localStorage.getItem("playground.style")] ? localStorage.getItem("playground.style") : "auto";
+ui.styleOptions.append(...Object.entries(STYLES).map(([value, style]) =>
+  el("button", { type: "button", className: "style-option", role: "option", value },
+    value === "auto"
+      ? el("span", { className: "style-preview is-auto", innerHTML: '<i class="ri-text"></i>' })
+      : el("img", { className: "style-preview", src: `/images/styles/${value}.webp`, alt: "", loading: "lazy", decoding: "async" }),
+    el("strong", { textContent: style.label }),
+    el("span", { className: "muted", textContent: style.hint }))));
 
-ui.style.addEventListener("change", () => localStorage.setItem("playground.style", ui.style.value));
-
-ui.model.addEventListener("change", () => {
-  localStorage.setItem("playground.model", ui.model.value);
+ui.styleOptions.addEventListener("click", (event) => {
+  const option = event.target.closest(".style-option");
+  if (!option) return;
+  state.style = option.value;
+  localStorage.setItem("playground.style", state.style);
+  togglePopover(ui.styleMenu, false);
+  ui.styleButton.focus();
   renderComposer();
 });
+
+function selectModel(name) {
+  state.model = name;
+  localStorage.setItem("playground.model", name);
+  renderComposer();
+}
 
 ui.count.addEventListener("click", (event) => {
   if (!event.target.value) return;
   state.count = Number(event.target.value);
   localStorage.setItem("playground.count", state.count);
+  renderComposer();
+});
+
+// Popovers: composer pickers and collection menus. Each sits right after its button,
+// and only one is open at a time.
+function togglePopover(menu, open) {
+  for (const other of document.querySelectorAll(".popover")) {
+    const show = other === menu && open;
+    other.hidden = !show;
+    other.previousElementSibling.setAttribute("aria-expanded", String(show));
+  }
+}
+
+for (const [button, menu] of [[ui.modelButton, ui.modelMenu], [ui.styleButton, ui.styleMenu], [ui.sizeButton, ui.sizeMenu]]) {
+  button.addEventListener("click", () => togglePopover(menu, menu.hidden));
+}
+
+document.addEventListener("keydown", (event) => {
+  const menu = event.key === "Escape" && event.target.closest(".popover-anchor")?.querySelector(".popover:not([hidden])");
+  if (!menu) return;
+
+  togglePopover(menu, false);
+  menu.previousElementSibling.focus();
+});
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".popover-anchor")) togglePopover(null, false);
+});
+
+function renderModelList() {
+  const query = ui.modelSearch.value.trim().toLowerCase();
+  const models = state.models.filter((model) => `${model.vendor} ${model.label}`.toLowerCase().includes(query));
+
+  ui.modelList.replaceChildren(
+    ...[...Map.groupBy(models, (model) => model.vendor)].map(([vendor, group]) =>
+      el("div", { className: "model-group", role: "group", ariaLabel: vendor },
+        el("h4", {}, providerIcon(group[0]), vendor),
+        ...group.map((model) =>
+          el("button", {
+            type: "button",
+            className: "model-option",
+            role: "option",
+            ariaSelected: String(model.name === state.model),
+            title: model.description ?? "",
+            onclick: () => {
+              selectModel(model.name);
+              togglePopover(ui.modelMenu, false);
+              ui.modelButton.focus();
+            },
+          },
+          el("img", { className: "model-preview", src: `${MODEL_PREVIEWS}${encodeURIComponent(model.name.split("/")[1])}.webp`, alt: "", loading: "lazy", decoding: "async", onerror: (event) => event.target.remove() }),
+          el("span", { className: "model-text" },
+            el("strong", { textContent: model.label }),
+            el("span", { className: "model-tags" },
+              el("span", { className: "model-price", textContent: model.outputPrice != null ? `${money(model.outputPrice)} / image` : "Price varies" }),
+              model.references ? el("span", { className: "tag", innerHTML: '<i class="ri-image-add-line"></i> References' }) : null,
+              model.mature ? el("span", { className: "tag", textContent: "Unfiltered" }) : null)),
+          el("i", { className: "ri-check-line model-check", ariaHidden: "true" }))))),
+    models.length ? null : el("p", { className: "model-empty muted", textContent: "No models match this search." }),
+  );
+}
+
+ui.modelButton.addEventListener("click", () => {
+  if (ui.modelMenu.hidden) return;
+  ui.modelSearch.value = "";
+  renderModelList();
+  ui.modelList.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "center" });
+  ui.modelSearch.focus();
+});
+
+ui.modelSearch.addEventListener("input", renderModelList);
+
+ui.modelSearch.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  ui.modelList.querySelector(".model-option")?.click();
+});
+
+ui.aspect.addEventListener("click", (event) => {
+  const button = event.target.closest("button");
+  if (!button) return;
+  state.aspect = button.value;
+  localStorage.setItem("playground.aspect", state.aspect);
+  renderComposer();
+});
+
+ui.resolution.addEventListener("click", (event) => {
+  if (!event.target.value) return;
+  state.resolution = event.target.value;
+  localStorage.setItem("playground.resolution", state.resolution);
   renderComposer();
 });
 
@@ -356,34 +591,27 @@ try {
     .filter((model) => !model.flags.includes("Deprecated"))
     .map((model) => {
       const [, output, reference] = model.pricingDescription?.match(/\$([\d.]+) per output image(?: \+ \$([\d.]+) per reference image)?/) ?? [];
-      const [vendor, label] = model.displayName?.includes(":")
-        ? model.displayName.split(/:\s*/, 2)
-        : [model.name.split("/")[0].slice(1), model.displayName ?? model.name.split("/")[1]];
+      const [provider, id] = model.name.slice(1).split("/");
+      const label = model.displayName?.split(/:\s*/).at(-1) ?? id;
 
       return {
         name: model.name,
         label,
-        vendor,
+        vendor: PROVIDERS[provider] ?? provider[0].toUpperCase() + provider.slice(1),
+        provider,
+        description: model.description,
         references: model.flags.includes("AllowReferenceImage"),
+        mature: model.flags.includes("AllowMatureContent"),
         outputPrice: output ? Number(output) : null,
         referencePrice: reference ? Number(reference) : 0,
       };
     })
     .sort((a, b) => a.vendor.localeCompare(b.vendor) || a.label.localeCompare(b.label));
 
-  const vendors = Map.groupBy(state.models, (model) => model.vendor);
-
-  ui.model.replaceChildren(...[...vendors].map(([vendor, models]) =>
-    el("optgroup", { label: vendor }, ...models.map((model) =>
-      el("option", {
-        value: model.name,
-        textContent: `${model.label}${model.outputPrice != null ? ` · ${money(model.outputPrice)}` : ""}${model.references ? " · refs" : ""}`,
-      })))));
-
   const saved = localStorage.getItem("playground.model");
-  ui.model.value = modelOf(saved) ? saved : modelOf(DEFAULT_MODEL) ? DEFAULT_MODEL : state.models[0]?.name;
+  state.model = modelOf(saved) ? saved : modelOf(DEFAULT_MODEL) ? DEFAULT_MODEL : state.models[0]?.name;
 } catch {
-  ui.model.replaceChildren(el("option", { textContent: "Models unavailable" }));
+  ui.modelLabel.textContent = "Models unavailable";
   showError("Could not load the list of models. Reload the page.");
 }
 
@@ -519,12 +747,14 @@ function renderFeed() {
 
   ui.collectionStats.textContent = `${plural(images.length, "image")} · ${money(costOf(state.generations))} spent`;
   ui.feedEmpty.hidden = state.generations.length > 0 || state.busy;
+  document.body.classList.toggle("is-focused", Boolean(state.collection && state.generations.length));
 
   ui.feed.replaceChildren(...state.generations.map((generation) => {
     const model = modelOf(generation.model);
     const details = [
       model?.label ?? generation.model,
       generation.style !== "auto" ? STYLES[generation.style]?.label : null,
+      generation.aspect ? `${generation.aspect} · ${generation.resolution}` : null,
       generation.references ? plural(generation.references, "reference") : null,
       generation.pending ? "generating..." : money(generation.cost),
       new Date(generation.createdAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }),
@@ -534,7 +764,7 @@ function renderFeed() {
       el("header", {},
         el("p", { className: "generation-prompt", textContent: generation.prompt }),
         el("p", { className: "generation-meta muted" }, ...details.map((detail) => el("span", { textContent: detail })))),
-      el("div", { className: "tiles" }, ...(generation.pending
+      el("div", { className: "tiles", style: generation.aspect ? `--tile-ratio: ${ratioOf(generation.aspect).join(" / ")}` : "" }, ...(generation.pending
         ? Array.from({ length: generation.count }, () => el("div", { className: "tile skeleton" }))
         : generation.outputs.map((output) => output.url
           ? el("button", { type: "button", className: "tile", onclick: () => openViewer(generation, output) },
@@ -559,10 +789,19 @@ ui.composer.addEventListener("submit", async (event) => {
   showError(null);
 
   const prompt = ui.prompt.value.trim();
-  const style = ui.style.value;
-  const model = ui.model.value;
+  const style = state.style;
+  const model = state.model;
   const references = [...state.references];
-  const input = STYLES[style].suffix ? `${prompt}\n\nStyle: ${STYLES[style].suffix}` : prompt;
+  const { aspect, resolution } = state;
+  const size = sizeOf(aspect, resolution);
+  const shape = size.width === size.height ? "square" : size.width > size.height ? "landscape" : "portrait";
+
+  // Not every model follows `size`, so the prompt also names the aspect ratio.
+  const input = [
+    prompt,
+    STYLES[style].suffix && `Style: ${STYLES[style].suffix}`,
+    `Aspect ratio: ${aspect} (${shape}).`,
+  ].filter(Boolean).join("\n\n");
 
   const collectionId = state.collection.id;
   const isCurrent = () => state.collection?.id === collectionId;
@@ -573,6 +812,8 @@ ui.composer.addEventListener("submit", async (event) => {
     collectionId,
     prompt,
     style,
+    aspect,
+    resolution,
     model,
     count: state.count,
     references: references.length,
@@ -588,12 +829,13 @@ ui.composer.addEventListener("submit", async (event) => {
   renderComposer();
   renderFeed();
   renderSession();
+  scrollTo({ top: 0, behavior: "smooth" });
 
   try {
     const response = await fetch("/api/images/generate", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: input, model, count: state.count, references }),
+      body: JSON.stringify({ prompt: input, model, count: state.count, size: `${size.width}x${size.height}`, references }),
     });
     const payload = await response.json().catch(() => ({}));
 
@@ -653,6 +895,12 @@ async function fetchImage(url) {
   return response.blob();
 }
 
+function saveBlob(blob, name) {
+  const link = el("a", { href: URL.createObjectURL(blob), download: name });
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+}
+
 async function withFeedback(button, done, action) {
   const original = button.innerHTML;
   button.disabled = true;
@@ -671,21 +919,27 @@ async function withFeedback(button, done, action) {
 }
 
 function openViewer(generation, output) {
-  const name = `${generation.prompt.slice(0, 48).replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "image"}`;
-  const actionButton = (icon, label, onclick) =>
-    el("button", { type: "button", className: "button secondary small", innerHTML: `<i class="${icon}"></i> ${label}`, onclick });
+  const name = slug(generation.prompt) || "image";
+  const actionButton = (icon, label, onclick, variant = "secondary") =>
+    el("button", { type: "button", className: `button ${variant} small`, innerHTML: `<i class="${icon}"></i> ${label}`, onclick });
+  const model = modelOf(generation.model);
+  const details = [
+    ["Model", el("span", { className: "viewer-model" }, model ? providerIcon(model) : null, model?.label ?? generation.model)],
+    ["Style", STYLES[generation.style]?.label],
+    ["Size", generation.aspect && `${generation.aspect} · ${generation.resolution}`],
+    ["Cost", money(output.cost)],
+    ["Created", new Date(generation.createdAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })],
+  ].filter(([, value]) => value);
 
   ui.viewerImage.src = output.url;
   ui.viewerImage.alt = generation.prompt;
   ui.viewerPrompt.textContent = generation.prompt;
-  ui.viewerMeta.textContent = `${modelOf(generation.model)?.label ?? generation.model} · ${money(output.cost)}`;
+  ui.viewerDetails.replaceChildren(...details.map(([term, value]) => el("div", {}, el("dt", { textContent: term }), el("dd", {}, value))));
 
   const download = actionButton("ri-download-2-line", "Download", () => withFeedback(download, "Saved", async () => {
     const blob = await fetchImage(output.url);
-    const link = el("a", { href: URL.createObjectURL(blob), download: `${name}.${blob.type.split("/")[1] || "png"}` });
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
-  }));
+    saveBlob(blob, `${name}.${blob.type.split("/")[1] || "png"}`);
+  }), "");
 
   // Clipboards only take PNG reliably, so other formats are converted first.
   const copy = actionButton("ri-file-copy-line", "Copy", () => withFeedback(copy, "Copied", async () => {
@@ -705,9 +959,9 @@ function openViewer(generation, output) {
     download,
     copy,
     actionButton("ri-edit-2-line", "Prompt on this image", () => {
-      if (!modelOf(ui.model.value)?.references) {
+      if (!modelOf(state.model)?.references) {
         const capable = modelOf(generation.model)?.references ? generation.model : state.models.find((model) => model.references)?.name;
-        if (capable) ui.model.value = capable;
+        if (capable) selectModel(capable);
       }
 
       state.references = [output.url];
@@ -730,7 +984,7 @@ function openViewer(generation, output) {
 ui.viewerClose.addEventListener("click", () => ui.viewer.close());
 
 ui.viewer.addEventListener("click", (event) => {
-  if (event.target === ui.viewer) ui.viewer.close();
+  if (event.target === ui.viewer || event.target.id === "viewer-stage") ui.viewer.close();
 });
 
 // ---------------------------------------------------------------------------

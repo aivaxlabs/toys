@@ -84,68 +84,124 @@
             </div>
           </div>
 
-          <form class="composer" id="composer" autocomplete="off">
-            <div class="references" id="references" hidden></div>
+          <div class="feed" id="feed"></div>
 
-            <textarea id="prompt" rows="3" maxlength="3900" placeholder="Describe an image. Paste or drop pictures to use them as references." aria-label="Prompt"></textarea>
+          <div class="composer-dock">
+            <form class="composer" id="composer" autocomplete="off">
+              <div class="references" id="references" hidden></div>
 
-            <div class="link-row" id="link-row" hidden>
-              <i class="ri-link"></i>
-              <input type="text" id="link-input" inputmode="url" spellcheck="false" placeholder="https://example.com/picture.jpg" aria-label="Reference image link">
-              <button class="button secondary small" type="button" id="link-add">Add</button>
-            </div>
+              <textarea id="prompt" rows="3" maxlength="3880" placeholder="Describe an image. Paste or drop pictures to use them as references." aria-label="Prompt"></textarea>
 
-            <div class="composer-bar">
-              <div class="composer-tools">
-                <button type="button" class="icon-button" id="attach-file" title="Upload reference images" aria-label="Upload reference images"><i class="ri-image-add-line"></i></button>
-                <button type="button" class="icon-button" id="attach-link" title="Add a reference image by link" aria-label="Add a reference image by link"><i class="ri-link"></i></button>
-                <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+              <div class="link-row" id="link-row" hidden>
+                <i class="ri-link"></i>
+                <input type="text" id="link-input" inputmode="url" spellcheck="false" placeholder="https://example.com/picture.jpg" aria-label="Reference image link">
+                <button class="button secondary small" type="button" id="link-add">Add</button>
+              </div>
 
-                <label class="picker" title="Model">
-                  <i class="ri-sparkling-2-line"></i>
-                  <select id="model" aria-label="Model"><option>Loading models...</option></select>
-                </label>
+              <div class="composer-bar">
+                <div class="composer-tools">
+                  <button type="button" class="icon-button" id="attach-file" title="Upload reference images" aria-label="Upload reference images"><i class="ri-image-add-line"></i></button>
+                  <button type="button" class="icon-button" id="attach-link" title="Add a reference image by link" aria-label="Add a reference image by link"><i class="ri-link"></i></button>
+                  <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
 
-                <label class="picker" title="Style">
-                  <i class="ri-palette-line"></i>
-                  <select id="style" aria-label="Style"></select>
-                </label>
+                  <div class="popover-anchor model-picker">
+                    <button type="button" class="picker" id="model-button" title="Model" aria-label="Model" aria-haspopup="listbox" aria-expanded="false" aria-controls="model-menu">
+                      <span class="model-button-icon" id="model-icon"><i class="ri-sparkling-2-line"></i></span>
+                      <span class="picker-value" id="model-label">Loading models...</span>
+                      <i class="ri-arrow-down-s-line"></i>
+                    </button>
 
-                <div class="segmented" id="count" role="group" aria-label="Number of images" title="Number of images">
-                  <i class="ri-stack-line" aria-hidden="true"></i>
-                  <span class="segmented-label" aria-hidden="true">Images</span>
-                  <button type="button" value="1" aria-pressed="true">1</button>
-                  <button type="button" value="2" aria-pressed="false">2</button>
-                  <button type="button" value="3" aria-pressed="false">3</button>
-                  <button type="button" value="4" aria-pressed="false">4</button>
+                    <div class="popover model-menu" id="model-menu" hidden>
+                      <label class="model-search">
+                        <i class="ri-search-line"></i>
+                        <input type="search" id="model-search" placeholder="Search models or providers" aria-label="Search models" aria-controls="model-list" autocomplete="off" spellcheck="false">
+                      </label>
+                      <div class="model-list" id="model-list" role="listbox" aria-label="Models"></div>
+                    </div>
+                  </div>
+
+                  <div class="popover-anchor">
+                    <button type="button" class="picker" id="style-button" title="Style" aria-label="Style" aria-haspopup="listbox" aria-expanded="false" aria-controls="style-menu">
+                      <i class="ri-palette-line"></i>
+                      <span class="picker-value" id="style-label"></span>
+                      <i class="ri-arrow-down-s-line"></i>
+                    </button>
+
+                    <div class="popover style-menu" id="style-menu" hidden>
+                      <p class="size-menu-title">Style</p>
+                      <div class="style-options" id="style-options" role="listbox" aria-label="Style"></div>
+                      <p class="size-menu-note muted">A style adds a short description to the end of your prompt.</p>
+                    </div>
+                  </div>
+
+                  <div class="popover-anchor size-picker">
+                    <button type="button" class="picker" id="size-button" title="Image size" aria-label="Image size" aria-haspopup="true" aria-expanded="false" aria-controls="size-menu">
+                      <i class="ri-aspect-ratio-line"></i>
+                      <span class="picker-value" id="size-label"></span>
+                      <i class="ri-arrow-down-s-line"></i>
+                    </button>
+
+                    <div class="popover size-menu" id="size-menu" hidden>
+                      <p class="size-menu-title">Aspect ratio</p>
+                      <div class="aspect-options" id="aspect" role="group" aria-label="Aspect ratio">
+                        <button type="button" value="1:1"><span style="width: 1.3rem; height: 1.3rem"></span>1:1</button>
+                        <button type="button" value="4:3"><span style="width: 1.8rem; height: 1.35rem"></span>4:3</button>
+                        <button type="button" value="3:2"><span style="width: 1.8rem; height: 1.2rem"></span>3:2</button>
+                        <button type="button" value="16:9"><span style="width: 1.8rem; height: 1rem"></span>16:9</button>
+                        <button type="button" value="3:4"><span style="width: 1.05rem; height: 1.4rem"></span>3:4</button>
+                        <button type="button" value="2:3"><span style="width: 0.95rem; height: 1.4rem"></span>2:3</button>
+                        <button type="button" value="9:16"><span style="width: 0.8rem; height: 1.4rem"></span>9:16</button>
+                      </div>
+
+                      <p class="size-menu-title">Resolution</p>
+                      <div class="segmented" id="resolution" role="group" aria-label="Resolution">
+                        <button type="button" value="1K">1K</button>
+                        <button type="button" value="2K">2K</button>
+                        <button type="button" value="4K">4K</button>
+                      </div>
+
+                      <p class="size-menu-note muted" id="size-pixels"></p>
+                    </div>
+                  </div>
+
+                  <div class="segmented" id="count" role="group" aria-label="Number of images" title="Number of images">
+                    <i class="ri-stack-line" aria-hidden="true"></i>
+                    <span class="segmented-label" aria-hidden="true">Images</span>
+                    <button type="button" value="1" aria-pressed="true">1</button>
+                    <button type="button" value="2" aria-pressed="false">2</button>
+                    <button type="button" value="3" aria-pressed="false">3</button>
+                    <button type="button" value="4" aria-pressed="false">4</button>
+                  </div>
+                </div>
+
+                <div class="composer-send">
+                  <span class="estimate" id="estimate" title="Estimated from the model's list price. The exact charge shows up after generating."></span>
+                  <button class="button" type="submit" id="generate"><i class="ri-magic-line"></i> Generate</button>
                 </div>
               </div>
 
-              <div class="composer-send">
-                <span class="estimate" id="estimate" title="Estimated from the model's list price. The exact charge shows up after generating."></span>
-                <button class="button" type="submit" id="generate"><i class="ri-magic-line"></i> Generate</button>
-              </div>
-            </div>
+              <p class="notice warning composer-note" id="composer-note" hidden></p>
+            </form>
 
-            <p class="notice warning composer-note" id="composer-note" hidden></p>
-          </form>
+            <p class="billing muted"><i class="ri-bank-card-line"></i> Charged to your AIVAX account · <a href="https://console.aivax.net">see usage</a></p>
+          </div>
 
-          <p class="billing muted"><i class="ri-bank-card-line"></i> Charged to your AIVAX account · <a href="https://console.aivax.net">see usage</a></p>
-
-          <div class="feed" id="feed"></div>
           <p class="feed-empty muted" id="feed-empty" hidden>Nothing here yet. Your images show up here, newest first.</p>
         </div>
       </div>
     </section>
 
     <dialog class="viewer" id="viewer" aria-label="Image">
-      <div class="viewer-image"><img id="viewer-image" alt=""></div>
-      <div class="viewer-side">
-        <button type="button" class="icon-button viewer-close" id="viewer-close" title="Close" aria-label="Close"><i class="ri-close-line"></i></button>
+      <div class="viewer-stage" id="viewer-stage"><img id="viewer-image" alt=""></div>
+      <aside class="viewer-side">
+        <div class="viewer-head">
+          <span class="viewer-kicker">Prompt</span>
+          <button type="button" class="icon-button viewer-close" id="viewer-close" title="Close" aria-label="Close"><i class="ri-close-line"></i></button>
+        </div>
         <p class="viewer-prompt" id="viewer-prompt"></p>
-        <p class="muted small" id="viewer-meta"></p>
+        <dl class="viewer-details" id="viewer-details"></dl>
         <div class="viewer-actions" id="viewer-actions"></div>
-      </div>
+      </aside>
     </dialog>
 
     <div class="notice error toast" id="error" role="alert" hidden><i class="ri-error-warning-line"></i><span></span></div>
@@ -227,15 +283,18 @@
 <pre class="code"><span class="c"># 1. Models, flags (AllowReferenceImage, Deprecated) and list prices. Public, no key needed.</span>
 curl https://inference.aivax.net/api/v1/information/image-models.json
 
-<span class="c"># 2. Generate. `count` is 1 to 4 images per prompt. `referenceImages` takes up to four
-#    http(s) links or data:image/...;base64 URIs, on models flagged AllowReferenceImage.</span>
+<span class="c"># 2. Generate. `count` is 1 to 4 images per prompt. `size` is "<width>x<height>", 64 to 4096 px
+#    per side; some models only get close, so this page also names the aspect ratio in the prompt.
+#    `referenceImages` takes up to four http(s) links or data:image/...;base64 URIs, on models
+#    flagged AllowReferenceImage.</span>
 curl https://direct.inference.aivax.net/api/v1/generations/images \
   -H <span class="s">"Authorization: Bearer $AIVAX_API_KEY"</span> \
   -H <span class="s">"Content-Type: application/json"</span> \
   -d <span class="s">'{
-    "input": "A lighthouse during a winter storm\n\nStyle: anime illustration, cel shading",
+    "input": "A lighthouse during a winter storm\n\nStyle: anime illustration, cel shading\n\nAspect ratio: 16:9 (landscape).",
     "model": "@black-forest-labs/flux-3-image-klein",
     "count": 2,
+    "size": "2048x1152",
     "referenceImages": ["https://example.com/lighthouse.jpg"]
   }'</span>
 
@@ -269,7 +328,7 @@ curl https://direct.inference.aivax.net/api/v1/generations/images \
     }));
 }
 
-<span class="k">async function</span> generateImages({ prompt, model, count = <span class="k">1</span>, references = [] }) {
+<span class="k">async function</span> generateImages({ prompt, model, count = <span class="k">1</span>, size, references = [] }) {
   <span class="k">const</span> response = <span class="k">await</span> fetch(<span class="s">`${AIVAX}/generations/images`</span>, {
     method: <span class="s">"POST"</span>,
     headers: {
@@ -280,6 +339,7 @@ curl https://direct.inference.aivax.net/api/v1/generations/images \
       input: prompt,
       model,
       count,
+      ...(size &amp;&amp; { size }),               <span class="c">// "2048x1152"</span>
       ...(references.length &amp;&amp; { referenceImages: references }),
     }),
   });
@@ -295,6 +355,7 @@ curl https://direct.inference.aivax.net/api/v1/generations/images \
   prompt: <span class="s">"A cozy reading nook with a sleeping cat"</span>,
   model: <span class="s">"@black-forest-labs/flux-3-image-klein"</span>,
   count: <span class="k">2</span>,
+  size: <span class="s">"1024x1024"</span>,
 });
 
 <span class="k">for</span> (<span class="k">const</span> output <span class="k">of</span> outputs) console.log(output.url ?? <span class="s">`failed: ${output.error}`</span>);
@@ -312,7 +373,7 @@ console.log(<span class="s">`Charged $${cost}`</span>);</pre>
     <span class="k">const</span> url = <span class="k">new</span> URL(request.url);
 
     <span class="k">if</span> (url.pathname === <span class="s">"/api/images/generate"</span> &amp;&amp; request.method === <span class="s">"POST"</span>) {
-      <span class="k">const</span> { prompt, model, count, references } = <span class="k">await</span> request.json();
+      <span class="k">const</span> { prompt, model, count, size, references } = <span class="k">await</span> request.json();
 
       <span class="k">const</span> response = <span class="k">await</span> fetch(<span class="s">`${AIVAX_API}/generations/images`</span>, {
         method: <span class="s">"POST"</span>,
@@ -320,7 +381,7 @@ console.log(<span class="s">`Charged $${cost}`</span>);</pre>
           authorization: <span class="s">`Bearer ${env.AIVAX_API_KEY}`</span>,
           <span class="s">"content-type"</span>: <span class="s">"application/json"</span>,
         },
-        body: JSON.stringify({ input: prompt, model, count, referenceImages: references }),
+        body: JSON.stringify({ input: prompt, model, count, size, referenceImages: references }),
       });
 
       <span class="k">const</span> payload = <span class="k">await</span> response.json();

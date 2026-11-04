@@ -28,7 +28,7 @@ Live at **[toys.aivax.net](https://toys.aivax.net)**.
 | Toy | What it does | AIVAX features | Limits |
 | --- | --- | --- | --- |
 | [Media → Markdown](public/media-to-markdown/) | Reads a web page link, an image (PNG, JPEG, WebP, TIFF, BMP) or a PDF, including scans, into clean Markdown, then splits it into chunks ready for a knowledge base (JSONL download). | [Fetch & OCR](https://docs.aivax.net/docs/web-foundation/fetch-and-ocr), [Text segmentation](https://docs.aivax.net/docs/rag/text-segmentation) | 10 MB per file, plus your account's [AIVAX limits](https://docs.aivax.net/docs/limits) |
-| [Image Playground](public/image-playground/) | Generates 1 to 4 images per prompt with any non-deprecated AIVAX image model, in five styles, guided by up to four reference images (links, uploads, pasted pictures or earlier results). Keeps collections of image links, prompts and costs in the browser's IndexedDB, with download and copy. | [Image generation](https://docs.aivax.net/docs/generations/images) | 4,000-character prompts, 4 references, plus your account's [AIVAX limits](https://docs.aivax.net/docs/limits) |
+| [Image Playground](public/image-playground/) | Generates 1 to 4 images per prompt with any non-deprecated AIVAX image model (picked from a searchable list with sample images and prices), in five styles, seven aspect ratios and 1K, 2K or 4K resolution, guided by up to four reference images (links, uploads, pasted pictures or earlier results). Keeps collections of image links, prompts and costs in the browser's IndexedDB, with download and copy. | [Image generation](https://docs.aivax.net/docs/generations/images) | 4,000-character prompts, 4 references, plus your account's [AIVAX limits](https://docs.aivax.net/docs/limits) |
 
 Every toy requires an AIVAX account. Usage is charged to the account that signed in, through an [OAuth](https://docs.aivax.net/docs/oauth) application key limited to `WebUtilities` and `InferenceGenerations`. The cost shown on each page is an estimate based on [AIVAX's public prices](https://docs.aivax.net/docs/pricing); the exact charges are in the console.
 
@@ -116,7 +116,7 @@ curl http://127.0.0.1:8787/api/segment \
 curl http://127.0.0.1:8787/api/images/generate \
   -b "toys_session=$AIVAX_KEY" \
   -H "Content-Type: application/json" \
-  -d '{ "prompt": "A lighthouse in a storm", "model": "@black-forest-labs/flux-3-image-klein", "count": 2, "references": [] }'
+  -d '{ "prompt": "A lighthouse in a storm", "model": "@black-forest-labs/flux-3-image-klein", "count": 2, "size": "1024x1024", "references": [] }'
 
 # Generated image bytes, for downloading and copying (the image storage sends no CORS headers)
 curl "http://127.0.0.1:8787/api/images/file?url=<generated image url>" -b "toys_session=$AIVAX_KEY" -o image.webp
