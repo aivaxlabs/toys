@@ -272,12 +272,15 @@ async function generateImages(request, url) {
   const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
   const model = body?.model;
   const count = body?.count ?? 1;
+  const size = body?.size;
   const references = body?.references ?? [];
+  const sides = typeof size === "string" ? size.match(/^(\d{2,4})x(\d{2,4})$/)?.slice(1).map(Number) : null;
 
   if (!prompt) return fail("Write a prompt in the `prompt` field.", 400);
   if (prompt.length > MAX_PROMPT_CHARS) return fail(`The prompt exceeds ${MAX_PROMPT_CHARS.toLocaleString("en-US")} characters.`, 413);
   if (typeof model !== "string" || !/^@[\w.-]{1,64}\/[\w.-]{1,96}$/.test(model)) return fail("Pick a model in the `model` field, like @black-forest-labs/flux-3-image-klein.", 400);
   if (!Number.isInteger(count) || count < 1 || count > 4) return fail("`count` must be a whole number from 1 to 4.", 400);
+  if (size != null && !sides?.every((side) => side >= 64 && side <= 4096)) return fail("`size` must look like 1024x1024, with each side from 64 to 4096 pixels.", 400);
   if (!Array.isArray(references) || references.length > MAX_REFERENCES) return fail(`Send up to ${MAX_REFERENCES} reference images in \`references\`.`, 400);
 
   for (const reference of references) {
@@ -304,6 +307,7 @@ async function generateImages(request, url) {
     input: prompt,
     model,
     count,
+    ...(size != null && { size }),
     ...(references.length && { referenceImages: references }),
   }));
 
