@@ -38,6 +38,7 @@
 
 .toy-card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -157,11 +158,6 @@
 @media (max-width: 720px) {
   .hero {
     padding-block: 4rem 2.5rem;
-  }
-
-  .toy-card {
-    grid-template-columns: 1fr;
-    padding: 1.5rem;
   }
 
   .how-steps {
