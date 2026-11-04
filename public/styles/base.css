@@ -3,30 +3,40 @@
   --font-display: "Sentient", "Iowan Old Style", "Palatino Linotype", serif;
   --font-mono: "Cascadia Code", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
 
-  --page: #faf9f5;
-  --page-raised: #fffefb;
-  --surface: #f3f2ed;
-  --surface-strong: #e9e7df;
-  --ink: #171713;
-  --ink-soft: #35352f;
-  --muted: #61645f;
-  --line: #dfddd6;
-  --line-strong: #c9c7be;
-  --blue-strong: #145f9e;
-  --blue: #2079c2;
-  --blue-soft: #eaf4fb;
-  --green: #2f7a4a;
-  --green-soft: #e8f4ec;
-  --amber: #9a6200;
-  --amber-soft: #fbf1dc;
-  --red: #b23a30;
-  --red-soft: #fbe9e6;
-  --white: #fffef9;
+  color-scheme: light dark;
+
+  --page: light-dark(#faf9f5, #141412);
+  --page-raised: light-dark(#fffefb, #1b1b18);
+  --surface: light-dark(#f3f2ed, #22221e);
+  --surface-strong: light-dark(#e9e7df, #2c2c27);
+  --ink: light-dark(#171713, #ecebe4);
+  --ink-soft: light-dark(#35352f, #c8c7bf);
+  --muted: light-dark(#61645f, #9a9c95);
+  --line: light-dark(#dfddd6, #2e2e29);
+  --line-strong: light-dark(#c9c7be, #45453e);
+  --blue-strong: light-dark(#145f9e, #8cc7f5);
+  --blue: light-dark(#2079c2, #b5dbf9);
+  --blue-soft: light-dark(#eaf4fb, #172a3b);
+  --green: light-dark(#2f7a4a, #82c99a);
+  --green-soft: light-dark(#e8f4ec, #16291d);
+  --amber: light-dark(#9a6200, #e3b462);
+  --amber-soft: light-dark(#fbf1dc, #2e2413);
+  --red: light-dark(#b23a30, #f08d82);
+  --red-soft: light-dark(#fbe9e6, #351b18);
+  --white: light-dark(#fffef9, #141412);
 
   --radius: 12px;
   --radius-sm: 8px;
   --container: 1152px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 *,
@@ -171,6 +181,37 @@ kbd {
   color: var(--ink);
 }
 
+.theme-switch {
+  display: inline-flex;
+  padding: 0.15rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.theme-switch button {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 160ms var(--ease), color 160ms var(--ease);
+}
+
+.theme-switch button:hover {
+  color: var(--ink);
+}
+
+.theme-switch button[aria-pressed="true"] {
+  background: var(--surface-strong);
+  color: var(--ink);
+}
+
 .site-footer {
   border-top: 1px solid var(--line);
   margin-top: 6rem;
@@ -211,6 +252,12 @@ section {
   }
 
   .site-nav .nav-label {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-nav .nav-external {
     display: none;
   }
 }

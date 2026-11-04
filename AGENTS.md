@@ -9,11 +9,11 @@
 
 ## Repository map
 - `wrangler.jsonc` — Worker config: entry `src/worker.js`, assets from `./public` with `run_worker_first: ["/api/*"]`, custom domain, and migrations `v1` (created `RateLimiter`) and `v2` (deleted it). Keep both tags.
-- `src/worker.js` — `/api/config`, `/api/auth/start|callback|logout`, `/api/convert`, `/api/segment`; `OAUTH_REQUEST` (client name, reason, permissions), `callAivax(token, ...)` and `upstreamError()`.
+- `src/worker.js` — `/api/config`, `/api/auth/start|callback|logout`, `/api/convert`, `/api/segment`, `/api/images/generate`, `/api/images/file`; `OAUTH_REQUEST` (client name, reason, permissions), `callAivax(token, ...)` and `upstreamError()`.
 - `public/index.html` — home page with the toy grid.
-- `public/<toy>/index.html` — one folder per toy (currently `media-to-markdown/`, which reads links, images and PDFs). `public/_redirects` keeps the old `/pdf-to-markdown/` URL working.
+- `public/<toy>/index.html` — one folder per toy: `media-to-markdown/` (reads links, images and PDFs) and `image-playground/` (image generation with collections in IndexedDB). `public/_redirects` keeps the old `/pdf-to-markdown/` URL working.
 - `public/styles/base.css` — design tokens, reset, header/footer. `components/` holds shared controls (`controls.css`) and animated toy icons (`toy-art.css`); `pages/` holds one stylesheet per page.
-- `public/scripts/site.js` — shared code tabs (`#code-tabs`) and code-block copy buttons. `public/scripts/<toy>.js` — page logic.
+- `public/scripts/site.js` — shared theme switch (`.theme-switch`, saved as `toys.theme` in `localStorage`), code tabs (`#code-tabs`) and code-block copy buttons. `public/scripts/<toy>.js` — page logic.
 
 ## Architecture and flow
 - Sign-in: page → `POST /api/auth/start` (returns the OAuth body and sets a single-use `toys_oauth_state` cookie) → the **browser** sends it to `POST https://inference.aivax.net/api/v1/auth/oauth` (rate limited per remote address, so it must not come from the Worker) → console approval → `GET /api/auth/callback` checks `state` and stores `access_token` in the `toys_session` cookie (`HttpOnly`, `SameSite=Lax`, path `/api`, `Max-Age` = `expires_in`). No refresh token.
@@ -22,7 +22,9 @@
 - Non-`/api/` paths fall through to `env.ASSETS`.
 - `MAX_FILE_BYTES` is 10 MB: the Fetch API accepts 50 MB, but Workers cut outbound fetches at ~125 s (HTTP 524) and a 45 MB PDF exceeded that even on the direct host. Don't raise it without moving conversion off the synchronous Worker call.
 - `/api/convert` takes either a `file` (PDF or PNG/JPEG/WebP/TIFF/BMP image, sent as a data URI) or a `url` (`http(s)` only, sent as is) and calls the Fetch API once.
-- Cost shown in the UI is a client-side estimate, priced at the signed-in account's plan, from the price constants at the top of `public/scripts/media-to-markdown.js` (`OCR_PRICE_PER_PU`, `SEGMENT_PRICE_PER_PU`). Keep them aligned with https://docs.aivax.net/docs/pricing.
+- `/api/images/generate` validates prompt, model, `count` (1–4) and up to four references (`http(s)` links or `data:image/(png|jpeg|webp|gif);base64` URIs, which the page downsizes to 1536 px WebP) and calls `/generations/images` once. AIVAX `400` becomes `422`. The model list and price estimate come from the public, CORS-enabled `GET https://inference.aivax.net/api/v1/information/image-models.json` (deprecated models hidden, references only for `AllowReferenceImage`); the charged cost comes from `outputs[].cost`. Collections live in IndexedDB (`aivax-image-playground`: `collections`, `generations`) and store image links only.
+- `/api/images/file` proxies generated images for download and copy, because Backblaze B2 sends no CORS headers. It requires the session cookie and only fetches PNG, JPEG, WebP or GIF from `https://aivax-objects.s3.us-west-002.backblazeb2.com/PublicObjects/ImageGeneration/...` without following redirects, served as an attachment; keep that restriction so it can't become an open proxy.
+- Cost shown in the Media → Markdown UI is a client-side estimate, priced at the signed-in account's plan, from the price constants at the top of `public/scripts/media-to-markdown.js` (`OCR_PRICE_PER_PU`, `SEGMENT_PRICE_PER_PU`). Keep them aligned with https://docs.aivax.net/docs/pricing.
 
 ## Commands
 - `bun install` — install `wrangler`.
@@ -38,6 +40,7 @@
 
 ## Conventions
 - Site copy is in English, plain language, task-first. The feature comes first; API calls, processing units and code samples go inside the collapsed "For developers" `<details class="drawer">`. Cost stays in a small meter.
+- Themes: System, Light and Dark. Color tokens in `base.css` use `light-dark()` and follow `color-scheme`, which `[data-theme]` on `<html>` overrides; an inline `<head>` script sets it before first paint. Use tokens instead of fixed colors so both themes work; `--white` is the text color on `--ink` surfaces, not literal white.
 - Visual language: tokens in `public/styles/base.css`; General Sans for text, Sentient serif only for the single page `<h1>`, mono for code; pill buttons; underlined text links; Remix Icons via jsDelivr. Avoid generic "AI-looking" designs.
 - `[hidden]` is forced to `display: none !important` in `base.css`; toggle visibility with the `hidden` property.
 - Page scripts are ES modules that cache elements in a `ui` object built with `$(id)`. Every `$()` id must exist in the page HTML.

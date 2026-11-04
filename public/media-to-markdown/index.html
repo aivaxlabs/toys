@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://api.fontshare.com">
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&f[]=sentient@400&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.min.css">
+  <meta name="color-scheme" content="light dark">
+  <script>document.documentElement.dataset.theme = localStorage.getItem("toys.theme") ?? "system";</script>
   <link rel="stylesheet" href="/styles/base.css">
   <link rel="stylesheet" href="/styles/components/controls.css">
   <link rel="stylesheet" href="/styles/components/toy-art.css">
@@ -21,7 +23,12 @@
       <nav class="site-nav">
         <a href="https://docs.aivax.net/docs/getting-started"><i class="ri-book-open-line"></i><span class="nav-label">Docs</span></a>
         <a href="https://github.com/aivaxlabs/toys"><i class="ri-github-line"></i><span class="nav-label">Source</span></a>
-        <a href="https://aivax.net"><i class="ri-external-link-line"></i><span class="nav-label">aivax.net</span></a>
+        <a class="nav-external" href="https://aivax.net"><i class="ri-external-link-line"></i><span class="nav-label">aivax.net</span></a>
+        <span class="theme-switch" role="group" aria-label="Theme">
+          <button type="button" value="system" title="System theme" aria-label="System theme"><i class="ri-computer-line"></i></button>
+          <button type="button" value="light" title="Light theme" aria-label="Light theme"><i class="ri-sun-line"></i></button>
+          <button type="button" value="dark" title="Dark theme" aria-label="Dark theme"><i class="ri-moon-line"></i></button>
+        </span>
         <span class="account" id="account" hidden>
           <i class="ri-user-3-line"></i>
           <span class="nav-label" id="account-name"></span>

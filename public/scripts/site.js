@@ -1,4 +1,18 @@
-// Shared behaviour: code-sample tabs and copy buttons on code blocks.
+// Shared behaviour: theme switch, code-sample tabs and copy buttons on code blocks.
+
+const themeButtons = document.querySelectorAll(".theme-switch button");
+
+function showTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  themeButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.value === theme)));
+}
+
+showTheme(document.documentElement.dataset.theme ?? "system");
+
+themeButtons.forEach((button) => button.addEventListener("click", () => {
+  showTheme(button.value);
+  localStorage.setItem("toys.theme", button.value);
+}));
 
 document.querySelectorAll("#code-tabs [role=tab]").forEach((tab) => {
   tab.addEventListener("click", () => {

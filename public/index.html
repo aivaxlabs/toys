@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://api.fontshare.com">
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&f[]=sentient@400&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.min.css">
+  <meta name="color-scheme" content="light dark">
+  <script>document.documentElement.dataset.theme = localStorage.getItem("toys.theme") ?? "system";</script>
   <link rel="stylesheet" href="/styles/base.css">
   <link rel="stylesheet" href="/styles/components/controls.css">
   <link rel="stylesheet" href="/styles/components/toy-art.css">
@@ -21,7 +23,12 @@
       <nav class="site-nav">
         <a href="https://docs.aivax.net/docs/getting-started"><i class="ri-book-open-line"></i><span class="nav-label">Docs</span></a>
         <a href="https://github.com/aivaxlabs/toys"><i class="ri-github-line"></i><span class="nav-label">Source</span></a>
-        <a href="https://aivax.net"><i class="ri-external-link-line"></i><span class="nav-label">aivax.net</span></a>
+        <a class="nav-external" href="https://aivax.net"><i class="ri-external-link-line"></i><span class="nav-label">aivax.net</span></a>
+        <span class="theme-switch" role="group" aria-label="Theme">
+          <button type="button" value="system" title="System theme" aria-label="System theme"><i class="ri-computer-line"></i></button>
+          <button type="button" value="light" title="Light theme" aria-label="Light theme"><i class="ri-sun-line"></i></button>
+          <button type="button" value="dark" title="Dark theme" aria-label="Dark theme"><i class="ri-moon-line"></i></button>
+        </span>
       </nav>
     </div>
   </header>
@@ -46,7 +53,7 @@
       <div class="container">
         <div class="section-head">
           <h2>Toys</h2>
-          <p class="muted">One toy today, more as new features land.</p>
+          <p class="muted">Small demos of AIVAX features, with more as new ones land.</p>
         </div>
         <div class="toy-grid">
           <a class="toy-card" href="/media-to-markdown/">
@@ -124,6 +131,54 @@
             </div>
           </a>
 
+          <a class="toy-card" href="/image-playground/">
+            <div class="toy-art">
+              <svg class="art-playground" viewBox="0 0 240 140" role="img" aria-label="A prompt line types itself, and four image frames develop one after another">
+                <g class="prompt">
+                  <rect x="20" y="98" width="200" height="26" rx="13" />
+                  <path class="typed" d="M36 111 h112" />
+                  <circle class="send" cx="205" cy="111" r="7" />
+                  <path class="send-arrow" d="M202 111 h6 M205.5 108 l3 3 l-3 3" />
+                </g>
+                <g class="frame frame-1">
+                  <rect x="20" y="16" width="44" height="70" rx="6" />
+                  <circle cx="34" cy="34" r="5" />
+                  <path d="M24 76 l12 -14 l9 9 l7 -8 l10 13" />
+                </g>
+                <g class="frame frame-2">
+                  <rect x="72" y="16" width="44" height="70" rx="6" />
+                  <circle cx="100" cy="38" r="9" />
+                  <path d="M80 78 q14 -18 28 0" />
+                </g>
+                <g class="frame frame-3">
+                  <rect x="124" y="16" width="44" height="70" rx="6" />
+                  <path d="M134 72 l12 -30 l12 30 z" />
+                  <circle cx="156" cy="30" r="4" />
+                </g>
+                <g class="frame frame-4">
+                  <rect x="176" y="16" width="44" height="70" rx="6" />
+                  <path d="M184 64 q14 -24 28 0 q-14 14 -28 0z" />
+                  <path d="M198 30 v8 M194 34 h8" />
+                </g>
+              </svg>
+            </div>
+            <div class="toy-body">
+              <h3>Image Playground</h3>
+              <p>
+                Generate images with dozens of models, guide them with reference pictures, and keep the results
+                in collections saved in your browser, with the cost of every image.
+              </p>
+              <div class="tags">
+                <span class="badge blue">Image generation</span>
+                <span class="badge blue">Reference images</span>
+              </div>
+              <div class="toy-foot">
+                <span class="muted">1 to 4 images per prompt</span>
+                <span class="go">Open toy <i class="ri-arrow-right-line"></i></span>
+              </div>
+            </div>
+          </a>
+
           <div class="toy-card soon" aria-label="More toys coming soon">
             <div class="toy-art">
               <svg class="art-soon" viewBox="0 0 240 140" aria-hidden="true">
@@ -177,5 +232,7 @@
       <span><a href="https://github.com/aivaxlabs/toys">github.com/aivaxlabs/toys</a> · <a href="https://docs.aivax.net/docs/pricing">Pricing</a> · <a href="https://docs.aivax.net/docs/limits">Limits</a></span>
     </div>
   </footer>
+
+  <script type="module" src="/scripts/site.js"></script>
 </body>
 </html>
