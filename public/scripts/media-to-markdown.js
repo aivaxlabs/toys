@@ -13,6 +13,11 @@ const $ = (id) => document.getElementById(id);
 
 const ui = {
   steps: document.querySelectorAll(".steps li"),
+  account: $("account"),
+  accountName: $("account-name"),
+  signOut: $("sign-out"),
+  signIn: $("sign-in"),
+  signInButton: $("sign-in-button"),
   picker: $("picker"),
   dropzone: $("dropzone"),
   dropzoneHint: $("dropzone-hint"),
@@ -27,7 +32,6 @@ const ui = {
   convert: $("convert"),
   convertLabel: $("convert-label"),
   convertStatus: $("convert-status"),
-  convertTurnstile: $("convert-turnstile"),
   error: $("error"),
   markdownResult: $("markdown-result"),
   markdownStats: $("markdown-stats"),
@@ -38,7 +42,6 @@ const ui = {
   segmentActions: $("segment-actions"),
   segment: $("segment"),
   segmentStatus: $("segment-status"),
-  segmentTurnstile: $("segment-turnstile"),
   sanitize: $("sanitize"),
   segmentsResult: $("segments-result"),
   segmentsStats: $("segments-stats"),
@@ -51,8 +54,6 @@ const ui = {
   mCost: $("m-cost"),
   mPus: $("m-pus"),
   mTime: $("m-time"),
-  qMinute: $("q-minute"),
-  qHour: $("q-hour"),
 };
 
 const state = {
@@ -64,37 +65,63 @@ const state = {
 };
 
 // ---------------------------------------------------------------------------
-// Turnstile: one invisible widget, rendered on demand next to the action that
-// asked for it, so a challenge shows up where the visitor is looking and every
-// request carries a fresh single-use token.
+// AIVAX sign-in. The Worker keeps the application key in an HttpOnly cookie;
+// the page only learns which account is connected.
 // ---------------------------------------------------------------------------
 
-const turnstileReady = new Promise((resolve, reject) => {
-  const startedAt = Date.now();
-  const poll = () => {
-    if (window.turnstile) return resolve();
-    if (Date.now() - startedAt > 15_000) return reject(new Error("Turnstile did not load. Disable blockers and reload."));
-    setTimeout(poll, 50);
-  };
-  poll();
+const OAUTH_API = "https://inference.aivax.net/api/v1/auth/oauth";
+
+function renderAccount(account) {
+  state.config.account = account;
+  ui.account.hidden = !account;
+  ui.signIn.hidden = Boolean(account);
+
+  if (!account) {
+    setSource(null);
+    ui.picker.hidden = true;
+    return;
+  }
+
+  ui.picker.hidden = Boolean(state.source);
+  ui.accountName.textContent = account.name || account.email;
+  ui.account.title = account.email;
+  if (ui.plan.querySelector(`option[value="${account.plan?.toLowerCase()}"]`)) ui.plan.value = account.plan.toLowerCase();
+  renderSession();
+}
+
+// The authorization request is sent from the browser because AIVAX rate limits it per remote address.
+ui.signInButton.addEventListener("click", async () => {
+  showError(null);
+  ui.signInButton.disabled = true;
+
+  try {
+    const request = await fetch("/api/auth/start", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ next: location.pathname }),
+    }).then((response) => response.json());
+
+    request.returnUrl = new URL(request.returnUrl, location.origin).href;
+
+    const response = await fetch(OAUTH_API, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) throw new Error(payload.error ?? "AIVAX could not start the sign-in. Try again.");
+    location.assign(payload.data.authorizationUrl);
+  } catch (error) {
+    showError(error.message);
+    ui.signInButton.disabled = false;
+  }
 });
 
-async function getTurnstileToken(container, statusEl) {
-  await turnstileReady;
-
-  let widgetId;
-
-  return new Promise((resolve, reject) => {
-    widgetId = turnstile.render(container, {
-      sitekey: state.config.turnstileSiteKey,
-      appearance: "interaction-only",
-      callback: resolve,
-      "before-interactive-callback": () => (statusEl.textContent = "Confirm you're human below to continue."),
-      "error-callback": () => reject(new Error("Turnstile could not verify this browser.")),
-      "expired-callback": () => reject(new Error("Turnstile token expired. Try again.")),
-    });
-  }).finally(() => turnstile.remove(widgetId));
-}
+ui.signOut.addEventListener("click", async () => {
+  await fetch("/api/auth/logout", { method: "POST" });
+  renderAccount(null);
+});
 
 // ---------------------------------------------------------------------------
 // Session panel
@@ -151,12 +178,6 @@ function renderSession() {
   }
 }
 
-function renderQuota(remaining) {
-  if (!remaining) return;
-  ui.qMinute.textContent = `${remaining.minuteRemaining} / ${state.config.limits.perMinute}`;
-  ui.qHour.textContent = remaining.hourRemaining;
-}
-
 function showError(message) {
   ui.error.hidden = !message;
   ui.error.querySelector("span").textContent = message ?? "";
@@ -175,7 +196,7 @@ async function trackedCall(route, request) {
     const payload = await response.json().catch(() => ({}));
 
     call.httpStatus = response.status;
-    renderQuota(payload.remaining);
+    if (response.status === 401) renderAccount(null);
 
     if (!response.ok) {
       call.status = "error";
@@ -343,13 +364,9 @@ async function convert() {
   setStep(1);
 
   try {
-    setBusy(ui.convert, ui.convertStatus, "Getting ready...");
-    const turnstileToken = await getTurnstileToken(ui.convertTurnstile, ui.convertStatus);
-
     const form = new FormData();
     if (state.source.url) form.append("url", state.source.url);
     else form.append("file", state.source.file);
-    form.append("turnstile", turnstileToken);
 
     setBusy(ui.convert, ui.convertStatus, KINDS[state.source.kind].working);
     const result = await trackedCall("web/fetch", { url: "/api/convert", method: "POST", body: form });
@@ -428,15 +445,12 @@ ui.segment.addEventListener("click", async () => {
   ui.segmentsResult.hidden = true;
 
   try {
-    setBusy(ui.segment, ui.segmentStatus, "Getting ready...");
-    const turnstileToken = await getTurnstileToken(ui.segmentTurnstile, ui.segmentStatus);
-
     setBusy(ui.segment, ui.segmentStatus, "Finding where each topic starts and ends...");
     const result = await trackedCall("generations/segment", {
       url: "/api/segment",
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ markdown: state.markdown, sanitize: ui.sanitize.checked, turnstile: turnstileToken }),
+      body: JSON.stringify({ markdown: state.markdown, sanitize: ui.sanitize.checked }),
     });
 
     state.segments = result.segments;
@@ -474,10 +488,12 @@ ui.plan.addEventListener("change", renderSession);
 // ---------------------------------------------------------------------------
 
 try {
-  state.config = await fetch("/api/config").then((response) => response.json());
-  renderQuota(state.config.remaining);
+  const response = await fetch("/api/config");
+  state.config = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(state.config.error);
+
+  renderAccount(state.config.account);
   ui.dropzoneHint.textContent = `PDF, PNG, JPEG, WebP, TIFF or BMP · up to ${state.config.maxFileBytes / 1024 / 1024} MB · never stored`;
-} catch {
-  showError("Could not reach the toy backend. Reload the page.");
-  ui.picker.hidden = true;
+} catch (error) {
+  showError(error.message || "Could not reach the toy backend. Reload the page.");
 }

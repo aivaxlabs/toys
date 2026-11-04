@@ -1,11 +1,20 @@
-export { RateLimiter } from "./rate-limiter.js";
-
 // The direct host bypasses the Cloudflare proxy timeout, so large documents don't end in HTTP 524.
 const AIVAX_API = "https://direct.inference.aivax.net/api/v1";
-const TURNSTILE_VERIFY = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
-// Every conversion or segmentation counts as one document against both windows.
-const LIMITS = { perMinute: 5, perHour: 20 };
+// Account identity is only served by the main host; the direct host only exposes inference routes.
+const AIVAX_ACCOUNT_API = "https://inference.aivax.net/api/v1/accounts";
+
+// HttpOnly, so the page (which renders untrusted Markdown) can never read the visitor's AIVAX token.
+const SESSION_COOKIE = "toys_session";
+const STATE_COOKIE = "toys_oauth_state";
+
+// The browser posts this to POST /api/v1/auth/oauth itself: that endpoint is rate limited per remote
+// address, and requests sent from the Worker would all share the Worker's address.
+const OAUTH_REQUEST = {
+  clientName: "AIVAX Toys",
+  reason: "Run the toys on toys.aivax.net: read links, images and PDFs as text, and split text into chunks. Usage is charged to this account.",
+  permissions: ["WebUtilities", "InferenceGenerations"],
+};
 
 // The Fetch API accepts 50 MB per item, but Workers cut outbound fetches at ~125 s (HTTP 524) and large
 // scanned PDFs take longer than that. 10 MB keeps processing inside the window.
@@ -38,9 +47,12 @@ export default {
     const url = new URL(request.url);
 
     try {
-      if (url.pathname === "/api/config" && request.method === "GET") return config(request, env);
-      if (url.pathname === "/api/convert" && request.method === "POST") return convert(request, env);
-      if (url.pathname === "/api/segment" && request.method === "POST") return segment(request, env);
+      if (url.pathname === "/api/config" && request.method === "GET") return await config(request, url);
+      if (url.pathname === "/api/auth/start" && request.method === "POST") return await startSignIn(request, url);
+      if (url.pathname === "/api/auth/callback" && request.method === "GET") return finishSignIn(request, url);
+      if (url.pathname === "/api/auth/logout" && request.method === "POST") return signOut(url);
+      if (url.pathname === "/api/convert" && request.method === "POST") return await convert(request, url);
+      if (url.pathname === "/api/segment" && request.method === "POST") return await segment(request, url);
     } catch (error) {
       console.error(error);
       return fail("Unexpected error. Please try again.", 500);
@@ -52,58 +64,79 @@ export default {
   },
 };
 
-function limiterFor(request, env) {
-  const ip = request.headers.get("cf-connecting-ip") ?? "local";
-  return env.RATE_LIMITER.get(env.RATE_LIMITER.idFromName(ip));
+function readCookie(request, name) {
+  const pair = (request.headers.get("cookie") ?? "").split(/;\s*/).find((item) => item.startsWith(`${name}=`));
+  return pair ? pair.slice(name.length + 1) : null;
 }
 
-async function config(request, env) {
-  const remaining = await limiterFor(request, env).status(LIMITS);
-  return json({ turnstileSiteKey: env.TURNSTILE_SITE_KEY, limits: LIMITS, maxFileBytes: MAX_FILE_BYTES, remaining });
+function cookie(url, name, value, path, maxAge) {
+  const secure = url.protocol === "https:" ? "; Secure" : "";
+  return `${name}=${value}; Path=${path}; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure}`;
 }
 
-/**
- * Shared gate for every billable call: a valid Turnstile token and a free rate-limit slot.
- * Returns a Response when the request must stop, or the remaining quota when it may proceed.
- */
-async function gate(request, env, turnstileToken) {
-  if (!env.AIVAX_API_KEY) return fail("The server is missing its AIVAX_API_KEY secret.", 500);
+const clearSession = (url) => ({ "set-cookie": cookie(url, SESSION_COOKIE, "", "/api", 0) });
 
-  if (!turnstileToken) return fail("Missing Turnstile token.", 400);
+async function config(request, url) {
+  const token = readCookie(request, SESSION_COOKIE);
+  if (!token) return json({ maxFileBytes: MAX_FILE_BYTES, account: null });
 
-  const verification = await fetch(TURNSTILE_VERIFY, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      secret: env.TURNSTILE_SECRET_KEY,
-      response: turnstileToken,
-      remoteip: request.headers.get("cf-connecting-ip") ?? undefined,
-    }),
-  }).then((response) => response.json());
+  const response = await fetch(AIVAX_ACCOUNT_API, { headers: { authorization: `Bearer ${token}` } });
 
-  if (!verification.success) return fail("Turnstile verification failed. Reload the page and try again.", 403);
+  if (response.status === 401) return json({ maxFileBytes: MAX_FILE_BYTES, account: null }, 200, clearSession(url));
+  if (!response.ok) return fail("Could not reach your AIVAX account. Reload the page.", 502);
 
-  const quota = await limiterFor(request, env).consume(LIMITS);
+  const { data } = await response.json();
 
-  if (!quota.allowed) {
-    return json(
-      {
-        error: `Rate limit reached. This toy allows ${LIMITS.perMinute} documents per minute and ${LIMITS.perHour} per hour.`,
-        remaining: quota,
-      },
-      429,
-      { "retry-after": String(quota.retryAfterSeconds) },
-    );
+  return json({
+    maxFileBytes: MAX_FILE_BYTES,
+    account: { name: data.name, email: data.email, plan: response.headers.get("x-authenticated-account-plan") },
+  });
+}
+
+/** Returns the OAuth request for the browser to send, bound to a single-use state kept in a cookie. */
+async function startSignIn(request, url) {
+  const body = await request.json().catch(() => null);
+  const next = typeof body?.next === "string" && body.next.length <= 512 ? body.next : "/";
+  const state = crypto.randomUUID();
+
+  // Relative on purpose: `wrangler dev` reports the custom-domain route as the request origin, so the page
+  // resolves it against its own address.
+  return json(
+    { ...OAUTH_REQUEST, returnUrl: `/api/auth/callback?state=${state}` },
+    200,
+    { "set-cookie": cookie(url, STATE_COOKIE, `${state}|${encodeURIComponent(next)}`, "/api/auth", 3600) },
+  );
+}
+
+/** AIVAX redirects here with `access_token` and `expires_in`, or with `error=access_denied`. */
+function finishSignIn(request, url) {
+  const [state, next = "%2F"] = (readCookie(request, STATE_COOKIE) ?? "").split("|");
+
+  let target = new URL(decodeURIComponent(next), url.origin);
+  if (target.origin !== url.origin) target = new URL("/", url.origin);
+
+  const headers = new Headers({ location: target.href, "cache-control": "no-store", "referrer-policy": "no-referrer" });
+  headers.append("set-cookie", cookie(url, STATE_COOKIE, "", "/api/auth", 0));
+
+  const token = url.searchParams.get("access_token");
+  const expiresIn = Math.floor(Number(url.searchParams.get("expires_in")));
+
+  if (state && state === url.searchParams.get("state") && /^sk-aiv-apk[\w-]{1,64}$/.test(token ?? "") && expiresIn > 0) {
+    headers.append("set-cookie", cookie(url, SESSION_COOKIE, token, "/api", expiresIn));
   }
 
-  return quota;
+  return new Response(null, { status: 302, headers });
 }
 
-async function callAivax(env, path, body) {
+function signOut(url) {
+  return json({ signedOut: true }, 200, clearSession(url));
+}
+
+async function callAivax(token, path, body) {
   const startedAt = Date.now();
   const response = await fetch(`${AIVAX_API}${path}`, {
     method: "POST",
-    headers: { authorization: `Bearer ${env.AIVAX_API_KEY}`, "content-type": "application/json" },
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
     body,
   });
 
@@ -125,23 +158,35 @@ async function callAivax(env, path, body) {
   };
 }
 
-async function convert(request, env) {
+/**
+ * Failures caused by the visitor's account (no balance, missing permission, rate limit) keep their status
+ * so the page can explain them. An expired or revoked token also ends the session.
+ */
+function upstreamError(call, url, fallback) {
+  if (call.status === 401) return json({ error: "Your AIVAX sign-in expired. Sign in again." }, 401, clearSession(url));
+  return fail(call.message ?? fallback, [402, 403, 429].includes(call.status) ? call.status : 502);
+}
+
+async function convert(request, url) {
+  const token = readCookie(request, SESSION_COOKIE);
+  if (!token) return fail("Sign in with AIVAX to use this toy.", 401);
+
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
   const link = form?.get("url");
 
-  let url;
+  let source;
   let mediaType;
 
   if (typeof link === "string" && link.trim()) {
     try {
-      url = new URL(link.trim());
+      source = new URL(link.trim());
     } catch {
       return fail("That link doesn't look right. Use a full address like https://example.com/page.", 400);
     }
 
-    if (url.protocol !== "http:" && url.protocol !== "https:") return fail("Only http:// and https:// links are accepted.", 400);
-    if (url.href.length > MAX_URL_CHARS) return fail(`The link exceeds ${MAX_URL_CHARS} characters.`, 413);
+    if (source.protocol !== "http:" && source.protocol !== "https:") return fail("Only http:// and https:// links are accepted.", 400);
+    if (source.href.length > MAX_URL_CHARS) return fail(`The link exceeds ${MAX_URL_CHARS} characters.`, 413);
   } else if (file instanceof File) {
     mediaType = Object.values(MEDIA_TYPES).includes(file.type)
       ? file.type
@@ -154,18 +199,15 @@ async function convert(request, env) {
     return fail("Attach a PDF or image in the `file` field, or send a link in the `url` field.", 400);
   }
 
-  const gateResult = await gate(request, env, form.get("turnstile"));
-  if (gateResult instanceof Response) return gateResult;
-
-  const body = url
-    ? JSON.stringify({ contents: [url.href], returnErrors: true })
+  const body = source
+    ? JSON.stringify({ contents: [source.href], returnErrors: true })
     : fileFetchBody(file, mediaType);
 
-  const call = await callAivax(env, "/web/fetch", body);
+  const call = await callAivax(token, "/web/fetch", body);
 
   const item = call.data?.results?.[0];
 
-  if (!call.ok || !item) return fail(call.message ?? "AIVAX could not process this content.", call.status === 429 ? 503 : 502);
+  if (!call.ok || !item) return upstreamError(call, url, "AIVAX could not process this content.");
   if (item.error) return fail(item.error, 422);
 
   return json({
@@ -173,28 +215,27 @@ async function convert(request, env) {
     processingUnits: item.processingUnits,
     elapsedMs: call.elapsedMs,
     requestId: call.requestId,
-    remaining: gateResult,
   });
 }
 
-async function segment(request, env) {
+async function segment(request, url) {
+  const token = readCookie(request, SESSION_COOKIE);
+  if (!token) return fail("Sign in with AIVAX to use this toy.", 401);
+
   const body = await request.json().catch(() => null);
   const markdown = typeof body?.markdown === "string" ? body.markdown.trim() : "";
 
   if (!markdown) return fail("Send the Markdown to segment in the `markdown` field.", 400);
   if (markdown.length > MAX_MARKDOWN_CHARS) return fail(`The text exceeds ${MAX_MARKDOWN_CHARS.toLocaleString("en-US")} characters.`, 413);
 
-  const gateResult = await gate(request, env, body.turnstile);
-  if (gateResult instanceof Response) return gateResult;
-
-  const call = await callAivax(env, "/generations/segment", JSON.stringify({
+  const call = await callAivax(token, "/generations/segment", JSON.stringify({
     documents: [markdown],
     sanitize: body.sanitize !== false,
   }));
 
   const result = call.data?.result?.[0];
 
-  if (!call.ok || !result) return fail(call.message ?? "AIVAX could not segment this text.", call.status === 429 ? 503 : 502);
+  if (!call.ok || !result) return upstreamError(call, url, "AIVAX could not segment this text.");
   if (result.error) return fail(result.error, 422);
 
   return json({
@@ -203,7 +244,6 @@ async function segment(request, env) {
     cost: call.data.usage?.cost ?? 0,
     elapsedMs: call.elapsedMs,
     requestId: call.requestId,
-    remaining: gateResult,
   });
 }
 

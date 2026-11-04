@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AIVAX Toys — small, free demos of AIVAX features</title>
-  <meta name="description" content="Try AIVAX features for free, watch the API calls and cost in real time, and copy the code that makes each toy work.">
+  <title>AIVAX Toys — small demos of AIVAX features</title>
+  <meta name="description" content="Try AIVAX features with your AIVAX account, watch the API calls and cost in real time, and copy the code that makes each toy work.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23171713'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%238cc7f5'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://api.fontshare.com">
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&f[]=sentient@400&display=swap">
@@ -31,12 +31,12 @@
       <div class="container">
         <h1>Small toys that show what AIVAX does</h1>
         <p class="lead">
-          Each toy wraps one or two AIVAX features in a page you can use right now. It runs on our account,
-          shows every API call and its cost as it happens, and ships with the code so you can rebuild it in an afternoon.
+          Each toy wraps one or two AIVAX features in a page you can use right now. Sign in with your AIVAX account,
+          and it shows every API call and its cost as it happens, and ships with the code so you can rebuild it in an afternoon.
         </p>
         <div class="hero-rules">
-          <span><i class="ri-gift-line"></i> Free to use, no sign-up</span>
-          <span><i class="ri-shield-check-line"></i> Protected by Turnstile and per-visitor limits</span>
+          <span><i class="ri-login-box-line"></i> Sign in with AIVAX</span>
+          <span><i class="ri-bank-card-line"></i> Pay only for what you use, at list prices</span>
           <span><i class="ri-git-repository-line"></i> Open source, Apache-2.0</span>
         </div>
       </div>
@@ -156,15 +156,15 @@
         <div class="how-steps">
           <div>
             <h3>Your browser talks to a tiny Worker</h3>
-            <p>The page never sees an API key. A Cloudflare Worker holds it as a secret, checks the Turnstile token, and counts your usage.</p>
+            <p>You sign in with AIVAX and approve a key limited to what the toys need. A Cloudflare Worker keeps it in a cookie the page can't read.</p>
           </div>
           <div>
             <h3>The Worker calls AIVAX</h3>
-            <p>Each call is a plain HTTPS request to the public AIVAX API. The Worker forwards the result, plus timing, request ID and usage.</p>
+            <p>Each call is a plain HTTPS request to the public AIVAX API, billed to your account. The Worker forwards the result, plus timing, request ID and usage.</p>
           </div>
           <div>
             <h3>You see the real numbers</h3>
-            <p>The session panel lists every call, its latency and processing units, and keeps a running cost estimate so you know what the same work would cost you.</p>
+            <p>The session panel lists every call, its latency and processing units, and keeps a running cost estimate. The exact charges are in your AIVAX console.</p>
           </div>
         </div>
       </div>
@@ -173,7 +173,7 @@
 
   <footer class="site-footer">
     <div class="container">
-      <span>AIVAX Toys is maintained by <a href="https://aivax.net">AIVAX</a>. Nothing here is billed to you.</span>
+      <span>AIVAX Toys is maintained by <a href="https://aivax.net">AIVAX</a>. Usage is billed to the AIVAX account you sign in with.</span>
       <span><a href="https://github.com/aivaxlabs/toys">github.com/aivaxlabs/toys</a> · <a href="https://docs.aivax.net/docs/pricing">Pricing</a> · <a href="https://docs.aivax.net/docs/limits">Limits</a></span>
     </div>
   </footer>

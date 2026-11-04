@@ -417,20 +417,38 @@
   padding: 0;
 }
 
-.turnstile {
-  display: flex;
-  justify-content: center;
-  padding: 0 1rem 1rem;
+.sign-in {
+  display: grid;
+  justify-items: center;
+  gap: 1.1rem;
+  padding: 3rem 1.5rem 2.5rem;
+  border-radius: var(--radius);
+  background: var(--page);
+  text-align: center;
 }
 
-.turnstile:empty {
-  display: none;
+.sign-in > div {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 34rem;
 }
 
-.next-step .turnstile {
-  grid-column: 1 / -1;
-  justify-content: flex-start;
-  padding: 0;
+.sign-in p {
+  font-size: 0.9375rem;
+}
+
+.account {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.account .link-button {
+  padding: 0 0 0 0.25rem;
+  text-decoration: underline;
 }
 
 .toggle {
@@ -767,6 +785,10 @@
 
   .result-body {
     padding: 1rem;
+  }
+
+  .account {
+    padding-left: 0.9rem;
   }
 
   .drawer summary .muted {
