@@ -1,7 +1,7 @@
 const MODELS_API = "https://inference.aivax.net/api/v1/information/image-models.json";
 const OAUTH_API = "https://inference.aivax.net/api/v1/auth/oauth";
 
-const MAX_REFERENCES = 4;
+const MAX_REFERENCES = 16;
 const REFERENCE_MAX_SIDE = 1536;
 const REFERENCE_MAX_FILE_BYTES = 20 * 1024 * 1024;
 const DEFAULT_MODEL = "@black-forest-labs/flux-3-image-klein";

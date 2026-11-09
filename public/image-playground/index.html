@@ -224,7 +224,7 @@
             <i class="ri-image-add-line"></i>
             <h3>Guide</h3>
             <p>
-              Models that accept references follow up to four pictures: a link, an upload, a pasted screenshot or an image you already made.
+              Models that accept references follow up to 16 pictures: a link, an upload, a pasted screenshot or an image you already made.
               Styles add a short description to the end of your prompt.
             </p>
           </div>
@@ -287,7 +287,7 @@ curl https://inference.aivax.net/api/v1/information/image-models.json
 
 <span class="c"># 2. Generate. `count` is 1 to 4 images per prompt. `size` is "<width>x<height>", 64 to 4096 px
 #    per side; some models only get close, so this page also names the aspect ratio in the prompt.
-#    `referenceImages` takes up to four http(s) links or data:image/...;base64 URIs, on models
+#    `referenceImages` takes up to 16 http(s) links or data:image/...;base64 URIs, on models
 #    flagged AllowReferenceImage.</span>
 curl https://direct.inference.aivax.net/api/v1/generations/images \
   -H <span class="s">"Authorization: Bearer $AIVAX_API_KEY"</span> \

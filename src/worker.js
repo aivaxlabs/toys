@@ -23,10 +23,10 @@ const MAX_URL_CHARS = 2048;
 const MAX_MARKDOWN_CHARS = 400_000;
 
 const MAX_PROMPT_CHARS = 4000;
-const MAX_REFERENCES = 4;
+const MAX_REFERENCES = 16;
 
-// The page shrinks uploads to about 1.5 MB before encoding them; this leaves room without letting
-// four references push the request past what the API accepts (8 MB decoded each).
+// The page shrinks uploads to about 1.5 MB before encoding them; this leaves room while staying
+// under what the API accepts (8 MB decoded each).
 const MAX_DATA_REFERENCE_CHARS = 6 * 1024 * 1024;
 const DATA_REFERENCE = /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+=*$/;
 
