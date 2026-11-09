@@ -772,39 +772,66 @@ function renderFeed() {
       new Date(generation.createdAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }),
     ].filter(Boolean);
 
+    // Generations saved before reference images were stored only know how many there were, so they can't be repeated.
+    const repeatable = !generation.references || Boolean(generation.referenceImages);
+
     return el("article", { className: `generation${generation.pending ? " is-pending" : ""}` },
       el("header", {},
         el("p", { className: "generation-prompt", textContent: generation.prompt }),
-        el("p", { className: "generation-meta muted" }, ...details.map((detail) => el("span", { textContent: detail })))),
+        el("p", { className: "generation-meta muted" },
+          ...details.map((detail) => el("span", { textContent: detail })),
+          generation.pending ? null : el("button", {
+            type: "button",
+            className: "meta-action",
+            innerHTML: '<i class="ri-corner-down-right-line"></i> Use this prompt',
+            onclick: () => {
+              ui.prompt.value = generation.prompt;
+              state.references = [...(generation.referenceImages ?? [])];
+              renderReferences();
+              ui.prompt.focus();
+            },
+          }))),
       el("div", { className: "tiles", style: generation.aspect && generation.aspect !== AUTO ? `--tile-ratio: ${ratioOf(generation.aspect).join(" / ")}` : "" }, ...(generation.pending
         ? Array.from({ length: generation.count }, () => el("div", { className: "tile skeleton" }))
-        : generation.outputs.map((output) => output.url
-          ? el("button", { type: "button", className: "tile", onclick: () => openViewer(generation, output) },
-            el("img", {
-              src: output.url,
-              alt: generation.prompt,
-              loading: "lazy",
-              onerror: (event) => event.target.parentElement.classList.add("is-broken"),
-            }),
-            el("span", { className: "tile-cost", textContent: money(output.cost) }))
-          : el("div", { className: "tile failed" },
-            el("i", { className: "ri-error-warning-line" }),
-            el("span", { textContent: output.error ?? "This image could not be generated." }),
-            el("small", { className: "muted", textContent: "Not charged" }))))));
+        : [
+          ...generation.outputs.map((output, index) => output.pending
+            ? el("div", { className: "tile skeleton" })
+            : output.url
+              ? el("button", { type: "button", className: "tile", onclick: () => openViewer(generation, output) },
+                el("img", {
+                  src: output.url,
+                  alt: generation.prompt,
+                  loading: "lazy",
+                  onerror: (event) => event.target.parentElement.classList.add("is-broken"),
+                }),
+                el("span", { className: "tile-cost", textContent: money(output.cost) }))
+              : el("div", { className: "tile failed" },
+                el("i", { className: "ri-error-warning-line" }),
+                el("span", { textContent: output.error ?? "This image could not be generated." }),
+                el("small", { className: "muted", textContent: "Not charged" }),
+                repeatable ? el("button", {
+                  type: "button",
+                  className: "button secondary small",
+                  disabled: state.busy,
+                  innerHTML: '<i class="ri-refresh-line"></i> Retry',
+                  onclick: () => regenerate(generation, index),
+                }) : null)),
+          repeatable ? el("button", {
+            type: "button",
+            className: "tile more",
+            disabled: state.busy,
+            title: "Generate one more image with the same prompt and references",
+            onclick: () => regenerate(generation, null),
+          },
+          el("i", { className: "ri-add-line" }),
+          el("span", { textContent: "One more" }),
+          el("small", { className: "muted", textContent: "Same prompt and references" })) : null,
+        ])));
   }));
 }
 
-ui.composer.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  if (ui.generate.disabled) return;
-
-  showError(null);
-
-  const prompt = ui.prompt.value.trim();
-  const style = state.style;
-  const model = state.model;
-  const references = [...state.references];
-  const { aspect, resolution } = state;
+async function requestImages(generation, count) {
+  const { prompt, style, aspect, resolution, model, referenceImages } = generation;
   const size = sizeOf(aspect, resolution);
   const [width, height] = aspect === AUTO ? [] : ratioOf(aspect);
   const shape = width === height ? "square" : width > height ? "landscape" : "portrait";
@@ -812,43 +839,19 @@ ui.composer.addEventListener("submit", async (event) => {
   // Not every model follows `size`, so the prompt also names the aspect ratio.
   const input = [
     prompt,
-    STYLES[style].suffix && `Style: ${STYLES[style].suffix}`,
+    STYLES[style]?.suffix && `Style: ${STYLES[style].suffix}`,
     aspect !== AUTO && `Aspect ratio: ${aspect} (${shape}).`,
   ].filter(Boolean).join("\n\n");
 
-  const collectionId = state.collection.id;
-  const isCurrent = () => state.collection?.id === collectionId;
-
-  const pending = {
-    id: crypto.randomUUID(),
-    pending: true,
-    collectionId,
-    prompt,
-    style,
-    aspect,
-    resolution,
-    model,
-    count: state.count,
-    references: references.length,
-    outputs: [],
-    cost: 0,
-    createdAt: Date.now(),
-  };
   const call = { status: "pending", model };
-
-  state.busy = true;
-  state.generations.unshift(pending);
   state.calls.push(call);
-  renderComposer();
-  renderFeed();
   renderSession();
-  scrollTo({ top: 0, behavior: "smooth" });
 
   try {
     const response = await fetch("/api/images/generate", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: input, model, count: state.count, size: size && `${size.width}x${size.height}`, references }),
+      body: JSON.stringify({ prompt: input, model, count, size: size && `${size.width}x${size.height}`, references: referenceImages ?? [] }),
     });
     const payload = await response.json().catch(() => ({}));
 
@@ -859,12 +862,95 @@ ui.composer.addEventListener("submit", async (event) => {
     if (response.status === 401) renderAccount(null);
     if (!response.ok) throw new Error(payload.error ?? `Something went wrong (HTTP ${response.status}). Try again.`);
 
-    const generation = { ...pending, outputs: payload.outputs, cost: payload.cost };
-    delete generation.pending;
-
     call.status = "ok";
     call.images = payload.outputs.filter((output) => output.url).length;
     call.cost = payload.cost;
+
+    return payload;
+  } catch (error) {
+    call.status = "error";
+    call.error = error.message;
+    throw error;
+  }
+}
+
+// Retries the failed output at `index` in place, or adds one more image when `index` is null.
+async function regenerate(generation, index) {
+  if (state.busy) return;
+
+  const placeholder = { pending: true };
+  const previous = index == null ? [] : [generation.outputs[index]];
+
+  showError(null);
+  generation.outputs.splice(index ?? generation.outputs.length, previous.length, placeholder);
+  state.busy = true;
+  renderComposer();
+  renderFeed();
+
+  try {
+    const payload = await requestImages(generation, 1);
+
+    generation.outputs.splice(generation.outputs.indexOf(placeholder), 1, ...payload.outputs);
+    generation.cost = (generation.cost ?? 0) + payload.cost;
+
+    const collection = await store("collections", "readonly", (collections) => collections.get(generation.collectionId));
+    if (collection) {
+      collection.updatedAt = Date.now();
+      await store("generations", "readwrite", (generations) => generations.put(generation));
+      await store("collections", "readwrite", (collections) => collections.put(collection));
+    }
+
+    // The collection may have been reopened while generating, which loads fresh copies of its generations.
+    const shown = state.generations.findIndex((item) => item.id === generation.id);
+    if (shown >= 0) state.generations[shown] = generation;
+  } catch (error) {
+    generation.outputs.splice(generation.outputs.indexOf(placeholder), 1, ...previous);
+    showError(error.message);
+  } finally {
+    state.busy = false;
+    renderComposer();
+    renderFeed();
+    renderSession();
+  }
+}
+
+ui.composer.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (ui.generate.disabled) return;
+
+  showError(null);
+
+  const collectionId = state.collection.id;
+  const isCurrent = () => state.collection?.id === collectionId;
+
+  const pending = {
+    id: crypto.randomUUID(),
+    pending: true,
+    collectionId,
+    prompt: ui.prompt.value.trim(),
+    style: state.style,
+    aspect: state.aspect,
+    resolution: state.resolution,
+    model: state.model,
+    count: state.count,
+    references: state.references.length,
+    referenceImages: [...state.references],
+    outputs: [],
+    cost: 0,
+    createdAt: Date.now(),
+  };
+
+  state.busy = true;
+  state.generations.unshift(pending);
+  renderComposer();
+  renderFeed();
+  scrollTo({ top: 0, behavior: "smooth" });
+
+  try {
+    const payload = await requestImages(pending, pending.count);
+
+    const generation = { ...pending, outputs: payload.outputs, cost: payload.cost };
+    delete generation.pending;
 
     // The collection may have been left or deleted while the images were generating; charged results
     // still belong to the collection that asked for them, if it exists.
@@ -883,8 +969,6 @@ ui.composer.addEventListener("submit", async (event) => {
       renderReferences();
     }
   } catch (error) {
-    call.status = "error";
-    call.error = error.message;
     if (isCurrent()) state.generations.splice(state.generations.indexOf(pending), 1);
     showError(error.message);
   } finally {

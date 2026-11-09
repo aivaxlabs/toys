@@ -1292,8 +1292,54 @@ button.picker {
   cursor: default;
 }
 
-.tile.failed i {
+.tile.failed i,
+.tile.more i {
   font-size: 1.5rem;
+}
+
+.tile.failed .button {
+  justify-self: center;
+  margin-top: 0.35rem;
+}
+
+.tile.more {
+  align-content: center;
+  gap: 0.35rem;
+  padding: 1rem;
+  border: 1px dashed var(--line-strong);
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background 160ms var(--ease), border-color 160ms var(--ease);
+}
+
+.tile.more:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: var(--surface);
+}
+
+.tile.more:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.meta-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue-strong);
+  font: inherit;
+  cursor: pointer;
+}
+
+.meta-action:hover {
+  text-decoration: underline;
 }
 
 .tile.skeleton {
